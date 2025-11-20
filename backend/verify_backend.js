@@ -1,0 +1,71 @@
+const rp = require('request-promise');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
+const sha256 = require('sha256');
+
+const BASE_URL = 'http://localhost:3001';
+
+async function runTests() {
+    console.log('Starting Backend Verification...');
+
+    try {
+        // 1. Test Root Endpoint
+        console.log('\n1. Testing Root Endpoint (GET /)...');
+        const rootResponse = await rp({ uri: BASE_URL + '/', method: 'GET' });
+        console.log('✅ Root Endpoint:', rootResponse);
+
+        // 2. Get Blockchain (Initial)
+        console.log('\n2. Fetching Blockchain (GET /blockchain)...');
+        const chainStep1 = await rp({ uri: BASE_URL + '/blockchain', method: 'GET', json: true });
+        console.log(`✅ Blockchain retrieved. Current length: ${chainStep1.chain.length}`);
+
+        // 3. Create Transaction
+        console.log('\n3. Creating Transaction (POST /transaction/broadcast)...');
+
+        // Generate keys and signature
+        const key = ec.genKeyPair();
+        const sender = key.getPublic('hex');
+        const recipient = ec.genKeyPair().getPublic('hex'); // Random recipient
+        const amount = 100;
+
+        // Sign data: amount + recipient (matches blockchain.js logic)
+        const msgHash = sha256(amount.toString() + recipient);
+        const signature = key.sign(msgHash).toDER('hex');
+
+        const transactionResult = await rp({
+            uri: BASE_URL + '/transaction/broadcast',
+            method: 'POST',
+            body: {
+                amount: amount,
+                sender: sender,
+                recipient: recipient,
+                signature: signature
+            },
+            json: true
+        });
+        console.log('✅ Transaction Result:', transactionResult.note);
+
+        // 4. Mine Block
+        console.log('\n4. Mining Block (GET /mine)...');
+        const mineResult = await rp({ uri: BASE_URL + '/mine', method: 'GET', json: true });
+        console.log('✅ Mining Result:', mineResult.note);
+        console.log('   New Block Index:', mineResult.block.index);
+
+        // 5. Get Blockchain (Final)
+        console.log('\n5. Fetching Blockchain (Final Check)...');
+        const chainStep2 = await rp({ uri: BASE_URL + '/blockchain', method: 'GET', json: true });
+        console.log(`✅ Blockchain retrieved. New length: ${chainStep2.chain.length}`);
+
+        if (chainStep2.chain.length > chainStep1.chain.length) {
+            console.log('\n🎉 SUCCESS: Chain length increased correctly.');
+        } else {
+            console.error('\n❌ FAILURE: Chain length did not increase.');
+        }
+
+    } catch (error) {
+        console.error('\n❌ TEST FAILED:', error.message);
+        if (error.error) console.error('   Details:', error.error);
+    }
+}
+
+runTests();
