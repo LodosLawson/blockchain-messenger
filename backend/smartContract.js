@@ -266,7 +266,120 @@ class SmartContract {
         return result;
     }
 
+    executeUserRegistryMethod(method, params, caller) {
+        const result = { success: false, message: '', newState: null };
+
+        switch (method) {
+            case 'register':
+                const { username, bio, avatar } = params;
+
+                // Username validation
+                if (!username || username.length < 3 || username.length > 20) {
+                    result.message = 'Username must be 3-20 characters';
+                    return result;
+                }
+
+                // Username uniqueness check
+                if (this.state.usernames[username]) {
+                    result.message = 'Username already taken';
+                    return result;
+                }
+
+                // User already registered check
+                if (this.state.users[caller]) {
+                    result.message = 'User already registered';
+                    return result;
+                }
+
+                // Register user
+                this.state.users[caller] = {
+                    username,
+                    bio: bio || '',
+                    avatar: avatar || '',
+                    registeredAt: Date.now()
+                };
+                this.state.usernames[username] = caller;
+
+                result.success = true;
+                result.message = `User @${username} registered successfully`;
+                result.newState = { ...this.state };
+                break;
+
+            case 'getUser':
+                // Support both username and address lookup
+                if (params.username) {
+                    const address = this.state.usernames[params.username];
+                    if (!address) {
+                        result.message = 'User not found';
+                        return result;
+                    }
+                    result.success = true;
+                    result.data = {
+                        address,
+                        username: this.state.users[address].username,
+                        bio: this.state.users[address].bio,
+                        avatar: this.state.users[address].avatar,
+                        registeredAt: this.state.users[address].registeredAt
+                    };
+                } else if (params.address) {
+                    const user = this.state.users[params.address];
+                    if (!user) {
+                        result.message = 'User not found';
+                        return result;
+                    }
+                    result.success = true;
+                    result.data = {
+                        address: params.address,
+                        username: user.username,
+                        bio: user.bio,
+                        avatar: user.avatar,
+                        registeredAt: user.registeredAt
+                    };
+                } else {
+                    result.message = 'Username or address required';
+                    return result;
+                }
+                break;
+
+            case 'updateProfile':
+                if (!this.state.users[caller]) {
+                    result.message = 'User not registered';
+                    return result;
+                }
+
+                const updates = {};
+                if (params.bio !== undefined) updates.bio = params.bio;
+                if (params.avatar !== undefined) updates.avatar = params.avatar;
+
+                this.state.users[caller] = {
+                    ...this.state.users[caller],
+                    ...updates
+                };
+
+                result.success = true;
+                result.message = 'Profile updated successfully';
+                result.newState = { ...this.state };
+                break;
+
+            default:
+                result.message = 'Unknown method';
+                return result;
+        }
+
+        if (result.success && method !== 'getUser') {
+            this.executionHistory.push({
+                method,
+                params,
+                caller,
+                timestamp: Date.now()
+            });
+        }
+
+        return result;
+    }
+
     getInfo() {
+
         return {
             contractId: this.contractId,
             type: this.type,
