@@ -1,7 +1,5 @@
 const rp = require('request-promise');
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
-const sha256 = require('sha256');
+const { ethers } = require('ethers');
 
 const BASE_URL = 'http://localhost:3001';
 
@@ -19,18 +17,19 @@ async function runTests() {
         const chainStep1 = await rp({ uri: BASE_URL + '/blockchain', method: 'GET', json: true });
         console.log(`✅ Blockchain retrieved. Current length: ${chainStep1.chain.length}`);
 
-        // 3. Create Transaction
+        // 3. Create Transaction with EVM signature
         console.log('\n3. Creating Transaction (POST /transaction/broadcast)...');
 
-        // Generate keys and signature
-        const key = ec.genKeyPair();
-        const sender = key.getPublic('hex');
-        const recipient = ec.genKeyPair().getPublic('hex'); // Random recipient
+        // Generate a random wallet for testing
+        const wallet = ethers.Wallet.createRandom();
+        const sender = wallet.address;
+        const recipientWallet = ethers.Wallet.createRandom();
+        const recipient = recipientWallet.address;
         const amount = 100;
 
-        // Sign data: amount + recipient (matches blockchain.js logic)
-        const msgHash = sha256(amount.toString() + recipient);
-        const signature = key.sign(msgHash).toDER('hex');
+        // Sign data: amount + recipient (matches blockchain.js verifyTransaction logic)
+        const messageToSign = amount.toString() + recipient;
+        const signature = await wallet.signMessage(messageToSign);
 
         const transactionResult = await rp({
             uri: BASE_URL + '/transaction/broadcast',
