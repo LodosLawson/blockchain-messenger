@@ -15,6 +15,8 @@ interface Transaction {
 interface Block {
   index: number;
   timestamp: number;
+  createdAt?: string;
+  version?: string;
   transactions: Transaction[];
   nonce: number;
   hash: string;
@@ -75,6 +77,19 @@ export default function BlockchainViewer() {
     return { text: tx.message, isDecrypted: false };
   };
 
+  const formatRelativeTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
+
   if (!blockchain) return <div className="text-center p-4">Loading Blockchain...</div>;
 
   return (
@@ -93,12 +108,20 @@ export default function BlockchainViewer() {
         {blockchain.chain.slice().reverse().map((block) => (
           <div key={block.index} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700">
             <div className="flex justify-between items-start mb-2">
-              <div>
+              <div className="flex items-center gap-2">
                 <span className="inline-block px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-100 rounded-full">
                   Block #{block.index}
                 </span>
-                <span className="ml-2 text-xs text-gray-500">
-                  {new Date(block.timestamp).toLocaleString()}
+                {block.version && (
+                  <span className="inline-block px-2 py-1 text-xs font-semibold text-purple-600 bg-purple-100 rounded-full">
+                    v{block.version}
+                  </span>
+                )}
+                <span className="text-xs text-gray-500">
+                  {formatRelativeTime(block.timestamp)}
+                </span>
+                <span className="text-xs text-gray-400">
+                  • {new Date(block.timestamp).toLocaleString()}
                 </span>
               </div>
               <div className="text-xs text-gray-400 font-mono">
