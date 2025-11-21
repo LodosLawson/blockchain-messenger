@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 class SmartContract {
     constructor(type, creator, params) {
         this.contractId = uuidv4().split('-').join('');
-        this.type = type; // 'TOKEN', 'ESCROW', 'VOTING'
+        this.type = type; // 'TOKEN', 'ESCROW', 'VOTING', 'USER_REGISTRY'
         this.creator = creator;
         this.params = params;
         this.state = this.initializeState(type, params);
@@ -48,6 +48,12 @@ class SmartContract {
                     endTime: params.endTime || (Date.now() + 86400000) // 24 hours default
                 };
 
+            case 'USER_REGISTRY':
+                return {
+                    users: {}, // address -> { username, avatar, bio }
+                    usernames: {} // username -> address (for uniqueness check)
+                };
+
             default:
                 return {};
         }
@@ -68,6 +74,8 @@ class SmartContract {
                     return this.executeEscrowMethod(method, methodParams, caller);
                 case 'VOTING':
                     return this.executeVotingMethod(method, methodParams, caller);
+                case 'USER_REGISTRY':
+                    return this.executeUserRegistryMethod(method, methodParams, caller);
                 default:
                     result.message = 'Unknown contract type';
                     return result;

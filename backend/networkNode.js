@@ -51,10 +51,10 @@ app.post('/transaction', function (req, res) {
 
 // Yeni işlem oluştur ve ağa yay (Broadcast)
 app.post('/transaction/broadcast', function (req, res) {
-    const { amount, sender, recipient, signature } = req.body;
+    const { amount, sender, recipient, signature, message } = req.body;
 
     try {
-        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature);
+        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature, message);
         bitcoin.addTransactionToPendingTransactions(newTransaction);
 
         const requestPromises = [];
@@ -288,7 +288,7 @@ app.post('/contract/deploy', function (req, res) {
     try {
         const contract = bitcoin.deployContract(type, creator, params);
         log('INFO', 'Contract deployed', { contractId: contract.contractId, type });
-        res.json({ 
+        res.json({
             note: 'Contract deployed successfully',
             contract: contract.getInfo()
         });

@@ -35,23 +35,19 @@ const contractTemplates = {
         requiredParams: ['title', 'options'],
         methods: ['vote', 'getResults'],
         example: {
-            title: 'Choose next feature',
-            options: ['Feature A', 'Feature B', 'Feature C'],
-            endTime: Date.now() + 86400000 // 24 hours
+            title: 'Best Framework?',
+            options: ['React', 'Vue', 'Angular']
         }
+    },
+
+    USER_REGISTRY: {
+        name: 'User Registry',
+        description: 'Decentralized user profile system',
+        requiredParams: [],
+        methods: ['register', 'getUser'],
+        example: {}
     }
 };
-
-function getTemplate(type) {
-    return contractTemplates[type] || null;
-}
-
-function getAllTemplates() {
-    return Object.keys(contractTemplates).map(key => ({
-        type: key,
-        ...contractTemplates[key]
-    }));
-}
 
 function validateParams(type, params) {
     const template = contractTemplates[type];
@@ -66,6 +62,13 @@ function validateParams(type, params) {
     }
 
     return { valid: true, message: 'Parameters valid' };
+}
+function getTemplate(type) {
+    return contractTemplates[type];
+}
+
+function getAllTemplates() {
+    return contractTemplates;
 }
 
 module.exports = {

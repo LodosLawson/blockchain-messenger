@@ -1,7 +1,6 @@
 const sha256 = require('sha256');
 const { v4: uuidv4 } = require('uuid');
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
+const { ethers } = require('ethers');
 const SmartContract = require('./smartContract');
 
 function Blockchain() {
@@ -24,6 +23,9 @@ function Blockchain() {
 
     // Genesis Block
     this.createNewBlock(100, '0', '0');
+
+    // Deploy System Contracts
+    this.deployContract('USER_REGISTRY', '00', {});
 }
 
 Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) {
@@ -44,7 +46,6 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
     }
 
     this.pendingTransactions = [];
-    this.contracts = []; // Smart contracts
     this.chain.push(newBlock);
 
     // Update blockchain timestamp
@@ -58,11 +59,12 @@ Blockchain.prototype.getLastBlock = function () {
 };
 
 // Yeni Transaction Yapısı (İmzalı)
-Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature) {
+Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature, message = '') {
     const newTransaction = {
         amount: amount,
         sender: sender,
         recipient: recipient,
+        message: message, // Chat message
         transactionId: uuidv4().split('-').join(''),
         timestamp: Date.now(),
         version: this.version,
@@ -82,7 +84,7 @@ Blockchain.prototype.addTransactionToPendingTransactions = function (transaction
     return this.getLastBlock()['index'] + 1;
 };
 
-// İşlem İmza Doğrulama
+// İşlem İmza Doğrulama (EVM Compatible)
 Blockchain.prototype.verifyTransaction = function (transaction) {
     // Mining ödülleri (sender = "00") imza gerektirmez
     if (transaction.sender === "00") return true;
@@ -91,10 +93,20 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
         return false;
     }
 
-    const key = ec.keyFromPublic(transaction.sender, 'hex');
-    const msgHash = sha256(transaction.amount.toString() + transaction.recipient);
+    try {
+        // Mesajı oluştur (imzalanan veri)
+        // Not: Frontend tarafında da aynı formatta imzalanmalı!
+        const message = transaction.amount.toString() + transaction.recipient;
 
-    return key.verify(msgHash, transaction.signature);
+        // İmzayı doğrulayan adresi bul
+        const recoveredAddress = ethers.utils.verifyMessage(message, transaction.signature);
+
+        // Gönderen adresi ile eşleşiyor mu?
+        return recoveredAddress.toLowerCase() === transaction.sender.toLowerCase();
+    } catch (error) {
+        console.error('Signature verification failed:', error);
+        return false;
+    }
 };
 
 Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {
@@ -147,6 +159,33 @@ Blockchain.prototype.chainIsValid = function (blockchain) {
     return validChain;
 };
 
+Blockchain.prototype.getBlock = function (blockHash) {
+    let correctBlock = null;
+    this.chain.forEach(block => {
+        if (block.hash === blockHash) correctBlock = block;
+    });
+    return correctBlock;
+};
+
+Blockchain.prototype.getTransaction = function (transactionId) {
+    let correctTransaction = null;
+    let correctBlock = null;
+
+    this.chain.forEach(block => {
+        block.transactions.forEach(transaction => {
+            if (transaction.transactionId === transactionId) {
+                correctTransaction = transaction;
+                correctBlock = block;
+            }
+        });
+    });
+
+    return {
+        transaction: correctTransaction,
+        block: correctBlock
+    };
+};
+
 // Adres verilerini getir (Bakiye ve İşlemler)
 Blockchain.prototype.getAddressData = function (address) {
     const addressTransactions = [];
@@ -192,7 +231,7 @@ Blockchain.prototype.deployContract = function (type, creator, params) {
     return contract;
 };
 
-// Execute Smart Contract Method
+// Execute Smart Contract
 Blockchain.prototype.executeContract = function (contractId, method, params, caller) {
     const contract = this.contracts.find(c => c.contractId === contractId);
     if (!contract) {
@@ -204,13 +243,12 @@ Blockchain.prototype.executeContract = function (contractId, method, params, cal
 
 // Get Contract by ID
 Blockchain.prototype.getContract = function (contractId) {
-    const contract = this.contracts.find(c => c.contractId === contractId);
-    return contract ? contract.getInfo() : null;
+    return this.contracts.find(c => c.contractId === contractId);
 };
 
 // Get All Contracts
 Blockchain.prototype.getAllContracts = function () {
-    return this.contracts.map(c => c.getInfo());
+    return this.contracts;
 };
 
 module.exports = Blockchain;

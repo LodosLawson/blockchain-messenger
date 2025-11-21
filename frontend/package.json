@@ -13,6 +13,7 @@
     "axios": "^1.6.0",
     "crypto-js": "^4.2.0",
     "elliptic": "^6.5.4",
+    "ethers": "^5.7.2",
     "lucide-react": "^0.290.0",
     "next": "14.0.0",
     "react": "^18",
