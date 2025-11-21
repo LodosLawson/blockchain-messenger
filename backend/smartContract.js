@@ -24,7 +24,7 @@ class SmartContract {
                     symbol: params.symbol,
                     totalSupply: params.totalSupply || 1000000,
                     balances: {
-                        [params.creator]: params.totalSupply || 1000000
+                        [this.creator]: params.totalSupply || 1000000
                     }
                 };
 
