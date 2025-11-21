@@ -1,294 +1,266 @@
-"use client";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
-import { getPublicFromPrivate } from '../utils/crypto';
 
-interface Template {
+interface ContractTemplate {
     type: string;
     name: string;
     description: string;
     requiredParams: string[];
     methods: string[];
-    example: any;
+    example: Record<string, any>;
 }
 
 export default function ContractDeployer() {
-    const [templates, setTemplates] = useState<Template[]>([]);
+    const [templates, setTemplates] = useState<ContractTemplate[]>([]);
     const [selectedType, setSelectedType] = useState<string>('');
-    const [params, setParams] = useState<any>({});
-    const [publicKey, setPublicKey] = useState('');
-    const [deploying, setDeploying] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [params, setParams] = useState<Record<string, any>>({});
+    const [creator, setCreator] = useState('');
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchTemplates();
-        const key = localStorage.getItem('blockchain_private_key');
-        if (key) {
-            const pub = getPublicFromPrivate(key);
-            if (pub) setPublicKey(pub);
+        // Load wallet address from localStorage if available
+        const savedWallet = localStorage.getItem('wallet');
+        if (savedWallet) {
+            const { publicKey } = JSON.parse(savedWallet);
+            setCreator(publicKey);
         }
     }, []);
 
     const fetchTemplates = async () => {
         try {
-            const response = await axios.get(`${API_URL}/contract/templates`);
+            const response = await axios.get('http://localhost:3005/contract/templates');
             setTemplates(response.data.templates);
+            if (response.data.templates.length > 0) {
+                setSelectedType(response.data.templates[0].type);
+            }
         } catch (error) {
             console.error('Error fetching templates:', error);
         }
     };
 
-    const handleTemplateSelect = (type: string) => {
-        setSelectedType(type);
-        const template = templates.find(t => t.type === type);
-        if (template) {
-            // Initialize params with example values
-            const initialParams: any = { ...template.example };
-            initialParams.creator = publicKey;
-            setParams(initialParams);
-        }
-        setResult(null);
+    const handleParamChange = (key: string, value: string) => {
+        setParams(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleParamChange = (key: string, value: any) => {
-        setParams({ ...params, [key]: value });
-    };
-
-    const deployContract = async () => {
-        if (!publicKey) {
-            setResult({ success: false, message: 'Please create a wallet first!' });
-            return;
-        }
-
-        setDeploying(true);
-        setResult(null);
+    const deployContract = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setStatus(null);
 
         try {
-            const response = await axios.post(`${API_URL}/contract/deploy`, {
+            // Format parameters based on type
+            const formattedParams = { ...params };
+            if (selectedType === 'TOKEN') {
+                formattedParams.totalSupply = Number(formattedParams.totalSupply);
+            } else if (selectedType === 'ESCROW') {
+                formattedParams.amount = Number(formattedParams.amount);
+            } else if (selectedType === 'VOTING') {
+                formattedParams.options = (formattedParams.options as string).split(',').map(o => o.trim());
+                formattedParams.endTime = Date.now() + (Number(formattedParams.endTime) * 3600000);
+            }
+
+            const response = await axios.post('http://localhost:3005/contract/deploy', {
                 type: selectedType,
-                creator: publicKey,
-                params: params
+                creator,
+                params: formattedParams
             });
 
-            setResult({ success: true, data: response.data });
+            setStatus({
+                type: 'success',
+                message: `Contract deployed! ID: ${response.data.contract.contractId}`
+            });
+            setParams({});
         } catch (error: any) {
-            setResult({
-                success: false,
-                message: error.response?.data?.error || 'Deployment failed'
+            setStatus({
+                type: 'error',
+                message: error.response?.data?.error || error.message
             });
         } finally {
-            setDeploying(false);
+            setLoading(false);
         }
     };
 
     const selectedTemplate = templates.find(t => t.type === selectedType);
 
     return (
-        <div className="glass-card p-8">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
-                Deploy New Contract
+        <div className="clean-card p-6 animate-slide-in">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                <span>🚀</span> Deploy New Contract
             </h2>
 
-            {!publicKey && (
-                <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-600 rounded-lg">
-                    <p className="text-yellow-800 dark:text-yellow-200">
-                        ⚠️ Please create a wallet first to deploy contracts!
-                    </p>
-                </div>
-            )}
-
-            {/* Template Selection */}
-            <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Contract Type
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {templates.map((template) => (
-                        <button
-                            key={template.type}
-                            onClick={() => handleTemplateSelect(template.type)}
-                            className={`p-4 rounded-lg border-2 transition-all text-left ${selectedType === template.type
-                                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400'
-                                }`}
-                        >
-                            <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-white">
-                                {template.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {template.description}
-                            </p>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Parameter Form */}
-            {selectedTemplate && (
-                <div className="mb-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        Contract Parameters
-                    </h3>
-
-                    {selectedTemplate.type === 'TOKEN' && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Token Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.name || ''}
-                                    onChange={(e) => handleParamChange('name', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="MyToken"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Symbol
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.symbol || ''}
-                                    onChange={(e) => handleParamChange('symbol', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="MTK"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Total Supply
-                                </label>
-                                <input
-                                    type="number"
-                                    value={params.totalSupply || ''}
-                                    onChange={(e) => handleParamChange('totalSupply', parseInt(e.target.value))}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="1000000"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {selectedTemplate.type === 'ESCROW' && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Buyer Address
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.buyer || publicKey}
-                                    onChange={(e) => handleParamChange('buyer', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
-                                    placeholder="0x123..."
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Seller Address
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.seller || ''}
-                                    onChange={(e) => handleParamChange('seller', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
-                                    placeholder="0x456..."
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Amount
-                                </label>
-                                <input
-                                    type="number"
-                                    value={params.amount || ''}
-                                    onChange={(e) => handleParamChange('amount', parseInt(e.target.value))}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="100"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {selectedTemplate.type === 'VOTING' && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Voting Title
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.title || ''}
-                                    onChange={(e) => handleParamChange('title', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="Choose next feature"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Options (comma separated)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={params.options?.join(', ') || ''}
-                                    onChange={(e) => handleParamChange('options', e.target.value.split(',').map((s: string) => s.trim()))}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="Option A, Option B, Option C"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    End Time (hours from now)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={params.endTime ? Math.floor((params.endTime - Date.now()) / 3600000) : 24}
-                                    onChange={(e) => handleParamChange('endTime', Date.now() + parseInt(e.target.value) * 3600000)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                    placeholder="24"
-                                />
-                            </div>
-                        </>
-                    )}
-                </div>
-            )}
-
-            {/* Deploy Button */}
-            {selectedTemplate && (
-                <button
-                    onClick={deployContract}
-                    disabled={deploying || !publicKey}
-                    className="w-full py-3 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {deploying ? 'Deploying...' : 'Deploy Contract'}
-                </button>
-            )}
-
-            {/* Result */}
-            {result && (
-                <div className={`mt-6 p-4 rounded-lg ${result.success
-                        ? 'bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600'
-                        : 'bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600'
-                    }`}>
-                    {result.success ? (
-                        <div>
-                            <p className="text-green-800 dark:text-green-200 font-semibold mb-2">
-                                ✅ Contract Deployed Successfully!
-                            </p>
-                            <p className="text-sm text-green-700 dark:text-green-300 font-mono">
-                                Contract ID: {result.data.contract.contractId}
-                            </p>
-                        </div>
-                    ) : (
-                        <p className="text-red-800 dark:text-red-200">
-                            ❌ {result.message}
+            <form onSubmit={deployContract} className="space-y-6">
+                {/* Contract Type Selection */}
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contract Type</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {templates.map(t => (
+                            <button
+                                key={t.type}
+                                type="button"
+                                onClick={() => {
+                                    setSelectedType(t.type);
+                                    setParams({});
+                                }}
+                                className={`p-4 rounded-xl border-2 text-sm font-bold transition-all ${selectedType === t.type
+                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                                    }`}
+                            >
+                                {t.name}
+                            </button>
+                        ))}
+                    </div>
+                    {selectedTemplate && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
+                            {selectedTemplate.description}
                         </p>
                     )}
                 </div>
-            )}
+
+                {/* Creator Address */}
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Creator Address</label>
+                    <input
+                        type="text"
+                        value={creator}
+                        onChange={(e) => setCreator(e.target.value)}
+                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
+                        placeholder="Enter your wallet address"
+                        required
+                    />
+                </div>
+
+                {/* Dynamic Parameters */}
+                {selectedTemplate && (
+                    <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 border-b pb-2">Contract Parameters</h3>
+
+                        {selectedType === 'TOKEN' && (
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Token Name</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="e.g. My Custom Token"
+                                        onChange={e => handleParamChange('name', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Symbol</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="e.g. MCT"
+                                        onChange={e => handleParamChange('symbol', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Total Supply</label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="e.g. 1000000"
+                                        onChange={e => handleParamChange('totalSupply', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {selectedType === 'ESCROW' && (
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Buyer Address</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 font-mono text-sm"
+                                        placeholder="0x..."
+                                        onChange={e => handleParamChange('buyer', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Seller Address</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 font-mono text-sm"
+                                        placeholder="0x..."
+                                        onChange={e => handleParamChange('seller', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Amount</label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="0.00"
+                                        onChange={e => handleParamChange('amount', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {selectedType === 'VOTING' && (
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Poll Title</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="What should we vote on?"
+                                        onChange={e => handleParamChange('title', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Options (comma separated)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="Yes, No, Maybe"
+                                        onChange={e => handleParamChange('options', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Duration (hours)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        placeholder="24"
+                                        onChange={e => handleParamChange('endTime', e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={loading || !creator}
+                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-lg transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {loading ? 'Deploying...' : 'Deploy Contract'}
+                </button>
+
+                {status && (
+                    <div className={`p-4 rounded-lg text-sm ${status.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                            status.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                                'bg-blue-100 text-blue-800 border border-blue-200'
+                        }`}>
+                        {status.message}
+                    </div>
+                )}
+            </form>
         </div>
     );
 }

@@ -1,15 +1,12 @@
-"use client";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
-import { getPublicFromPrivate } from '../utils/crypto';
 
 interface Contract {
     contractId: string;
     type: string;
     creator: string;
+    params: any;
     state: any;
-    createdAt: number;
     version: string;
     executionCount: number;
 }
@@ -17,367 +14,209 @@ interface Contract {
 export default function ContractViewer() {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-    const [publicKey, setPublicKey] = useState('');
-    const [executing, setExecuting] = useState(false);
-    const [executionResult, setExecutionResult] = useState<any>(null);
-
-    // Execution params
     const [method, setMethod] = useState('');
-    const [execParams, setExecParams] = useState<any>({});
+    const [methodParams, setMethodParams] = useState<Record<string, any>>({});
+    const [caller, setCaller] = useState('');
+    const [result, setResult] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchContracts();
-        const key = localStorage.getItem('blockchain_private_key');
-        if (key) {
-            const pub = getPublicFromPrivate(key);
-            if (pub) setPublicKey(pub);
+        const savedWallet = localStorage.getItem('wallet');
+        if (savedWallet) {
+            const { publicKey } = JSON.parse(savedWallet);
+            setCaller(publicKey);
         }
     }, []);
 
     const fetchContracts = async () => {
         try {
-            const response = await axios.get(`${API_URL}/contracts`);
+            const response = await axios.get('http://localhost:3005/contracts');
             setContracts(response.data.contracts);
         } catch (error) {
             console.error('Error fetching contracts:', error);
         }
     };
 
-    const executeContract = async () => {
-        if (!selectedContract || !method || !publicKey) return;
-
-        setExecuting(true);
-        setExecutionResult(null);
+    const executeMethod = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedContract) return;
+        setLoading(true);
+        setResult(null);
 
         try {
-            const response = await axios.post(`${API_URL}/contract/execute`, {
+            const response = await axios.post('http://localhost:3005/contract/execute', {
                 contractId: selectedContract.contractId,
-                method: method,
-                params: execParams,
-                caller: publicKey
+                method,
+                params: methodParams,
+                caller
             });
 
-            setExecutionResult(response.data);
-            // Refresh contract data
-            setTimeout(fetchContracts, 500);
+            setResult(response.data);
+            // Refresh contract state
+            fetchContracts();
+            const updated = await axios.get(`http://localhost:3005/contract/${selectedContract.contractId}`);
+            setSelectedContract(updated.data.contract);
         } catch (error: any) {
-            setExecutionResult({
-                success: false,
-                message: error.response?.data?.error || 'Execution failed'
-            });
+            setResult({ success: false, message: error.response?.data?.error || error.message });
         } finally {
-            setExecuting(false);
+            setLoading(false);
         }
     };
 
-    const getContractIcon = (type: string) => {
+    const getMethods = (type: string) => {
         switch (type) {
-            case 'TOKEN': return '📜';
-            case 'ESCROW': return '🔒';
-            case 'VOTING': return '🗳️';
-            default: return '📄';
+            case 'TOKEN': return ['transfer', 'balanceOf', 'mint'];
+            case 'ESCROW': return ['deposit', 'release', 'refund'];
+            case 'VOTING': return ['vote', 'getResults'];
+            default: return [];
         }
-    };
-
-    const formatTimestamp = (timestamp: number) => {
-        return new Date(timestamp).toLocaleString();
     };
 
     return (
-        <div className="space-y-6">
-            {/* Contracts List */}
-            <div className="glass-card p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                        Deployed Contracts ({contracts.length})
-                    </h2>
-                    <button
-                        onClick={fetchContracts}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                    >
-                        🔄 Refresh
-                    </button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+            {/* Contract List */}
+            <div className="clean-card p-4 lg:col-span-1 h-fit">
+                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Deployed Contracts</h2>
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {contracts.length === 0 && (
+                        <p className="text-gray-500 text-center py-8">No contracts found.</p>
+                    )}
+                    {contracts.map(c => (
+                        <div
+                            key={c.contractId}
+                            onClick={() => {
+                                setSelectedContract(c);
+                                setMethod('');
+                                setMethodParams({});
+                                setResult(null);
+                            }}
+                            className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${selectedContract?.contractId === c.contractId
+                                    ? 'bg-indigo-50 border-indigo-500 shadow-md'
+                                    : 'bg-white dark:bg-gray-800 border-transparent hover:border-indigo-200'
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-bold text-indigo-600">{c.type}</span>
+                                <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">v{c.version}</span>
+                            </div>
+                            <div className="text-xs font-mono text-gray-500 truncate mb-2">
+                                {c.contractId}
+                            </div>
+                            {c.type === 'TOKEN' && <div className="text-sm font-medium">{c.state.name} ({c.state.symbol})</div>}
+                            {c.type === 'VOTING' && <div className="text-sm font-medium truncate">{c.state.title}</div>}
+                        </div>
+                    ))}
                 </div>
-
-                {contracts.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                        No contracts deployed yet. Deploy your first contract!
-                    </p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {contracts.map((contract) => (
-                            <button
-                                key={contract.contractId}
-                                onClick={() => {
-                                    setSelectedContract(contract);
-                                    setMethod('');
-                                    setExecParams({});
-                                    setExecutionResult(null);
-                                }}
-                                className={`p-4 rounded-lg border-2 transition-all text-left ${selectedContract?.contractId === contract.contractId
-                                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-2xl">{getContractIcon(contract.type)}</span>
-                                    <span className="font-bold text-gray-800 dark:text-white">
-                                        {contract.type}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-2">
-                                    ID: {contract.contractId.substring(0, 12)}...
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                    Executions: {contract.executionCount}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatTimestamp(contract.createdAt)}
-                                </p>
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
 
-            {/* Contract Details & Execution */}
-            {selectedContract && (
-                <div className="glass-card p-8">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
-                        <span className="text-2xl">{getContractIcon(selectedContract.type)}</span>
-                        {selectedContract.type} Contract
-                    </h3>
+            {/* Contract Details & Interaction */}
+            <div className="lg:col-span-2 space-y-6">
+                {selectedContract ? (
+                    <>
+                        {/* Details Card */}
+                        <div className="clean-card p-6 animate-slide-in">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                                        {selectedContract.type === 'TOKEN' && '🪙'}
+                                        {selectedContract.type === 'ESCROW' && '🔒'}
+                                        {selectedContract.type === 'VOTING' && '🗳️'}
+                                        Contract Details
+                                    </h2>
+                                    <p className="text-sm font-mono text-gray-500 mt-1">{selectedContract.contractId}</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-sm text-gray-500">Executions</div>
+                                    <div className="text-3xl font-bold text-indigo-600">{selectedContract.executionCount}</div>
+                                </div>
+                            </div>
 
-                    {/* Contract Info */}
-                    <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <p className="text-gray-600 dark:text-gray-400">Contract ID</p>
-                                <p className="font-mono text-gray-800 dark:text-white">{selectedContract.contractId}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 dark:text-gray-400">Version</p>
-                                <p className="font-semibold text-gray-800 dark:text-white">{selectedContract.version}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 dark:text-gray-400">Creator</p>
-                                <p className="font-mono text-xs text-gray-800 dark:text-white">{selectedContract.creator.substring(0, 20)}...</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 dark:text-gray-400">Executions</p>
-                                <p className="font-semibold text-gray-800 dark:text-white">{selectedContract.executionCount}</p>
+                            <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto shadow-inner">
+                                <pre>{JSON.stringify(selectedContract.state, null, 2)}</pre>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Contract State */}
-                    <div className="mb-6">
-                        <h4 className="font-semibold mb-2 text-gray-800 dark:text-white">Contract State</h4>
-                        <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-auto text-gray-800 dark:text-white">
-                            {JSON.stringify(selectedContract.state, null, 2)}
-                        </pre>
-                    </div>
-
-                    {/* Execute Method */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                        <h4 className="font-semibold mb-4 text-gray-800 dark:text-white">Execute Method</h4>
-
-                        {!publicKey && (
-                            <div className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-600 rounded-lg">
-                                <p className="text-yellow-800 dark:text-yellow-200">
-                                    ⚠️ Please create a wallet to execute contract methods!
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Method Selection */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Select Method
-                            </label>
-                            <select
-                                value={method}
-                                onChange={(e) => {
-                                    setMethod(e.target.value);
-                                    setExecParams({});
-                                    setExecutionResult(null);
-                                }}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            >
-                                <option value="">-- Select Method --</option>
-                                {selectedContract.type === 'TOKEN' && (
-                                    <>
-                                        <option value="transfer">transfer</option>
-                                        <option value="balanceOf">balanceOf</option>
-                                        <option value="mint">mint</option>
-                                    </>
-                                )}
-                                {selectedContract.type === 'ESCROW' && (
-                                    <>
-                                        <option value="deposit">deposit</option>
-                                        <option value="release">release</option>
-                                        <option value="refund">refund</option>
-                                    </>
-                                )}
-                                {selectedContract.type === 'VOTING' && (
-                                    <>
-                                        <option value="vote">vote</option>
-                                        <option value="getResults">getResults</option>
-                                    </>
-                                )}
-                            </select>
-                        </div>
-
-                        {/* Method Parameters */}
-                        {method && (
-                            <div className="space-y-4 mb-4">
-                                {/* TOKEN Methods */}
-                                {selectedContract.type === 'TOKEN' && method === 'transfer' && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                To Address
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={execParams.to || ''}
-                                                onChange={(e) => setExecParams({ ...execParams, to: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
-                                                placeholder="0x123..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Amount
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={execParams.amount || ''}
-                                                onChange={(e) => setExecParams({ ...execParams, amount: parseInt(e.target.value) })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                                placeholder="100"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {selectedContract.type === 'TOKEN' && method === 'balanceOf' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Address
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={execParams.address || publicKey}
-                                            onChange={(e) => setExecParams({ ...execParams, address: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
-                                            placeholder="0x123..."
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedContract.type === 'TOKEN' && method === 'mint' && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Mint To
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={execParams.mintTo || ''}
-                                                onChange={(e) => setExecParams({ ...execParams, mintTo: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
-                                                placeholder="0x123..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Amount
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={execParams.mintAmount || ''}
-                                                onChange={(e) => setExecParams({ ...execParams, mintAmount: parseInt(e.target.value) })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                                placeholder="1000"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* ESCROW Methods */}
-                                {selectedContract.type === 'ESCROW' && method === 'deposit' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Amount
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={execParams.amount || ''}
-                                            onChange={(e) => setExecParams({ ...execParams, amount: parseInt(e.target.value) })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                            placeholder="100"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* VOTING Methods */}
-                                {selectedContract.type === 'VOTING' && method === 'vote' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select Option
-                                        </label>
+                        {/* Execution Card */}
+                        <div className="clean-card p-6 animate-slide-in" style={{ animationDelay: '0.1s' }}>
+                            <h3 className="text-xl font-bold mb-4">Execute Method</h3>
+                            <form onSubmit={executeMethod} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Method</label>
                                         <select
-                                            value={execParams.option || ''}
-                                            onChange={(e) => setExecParams({ ...execParams, option: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                            value={method}
+                                            onChange={(e) => setMethod(e.target.value)}
+                                            className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                            required
                                         >
-                                            <option value="">-- Select Option --</option>
-                                            {selectedContract.state.options?.map((opt: string) => (
-                                                <option key={opt} value={opt}>{opt}</option>
+                                            <option value="">Select Method</option>
+                                            {getMethods(selectedContract.type).map(m => (
+                                                <option key={m} value={m}>{m}</option>
                                             ))}
                                         </select>
                                     </div>
-                                )}
-
-                                {/* Execute Button */}
-                                <button
-                                    onClick={executeContract}
-                                    disabled={executing || !publicKey}
-                                    className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {executing ? 'Executing...' : 'Execute'}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Execution Result */}
-                        {executionResult && (
-                            <div className={`mt-4 p-4 rounded-lg ${executionResult.success
-                                    ? 'bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-600'
-                                    : 'bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600'
-                                }`}>
-                                {executionResult.success ? (
-                                    <div>
-                                        <p className="text-green-800 dark:text-green-200 font-semibold mb-2">
-                                            ✅ {executionResult.message}
-                                        </p>
-                                        {executionResult.data && (
-                                            <pre className="text-xs text-green-700 dark:text-green-300 mt-2">
-                                                {JSON.stringify(executionResult.data, null, 2)}
-                                            </pre>
-                                        )}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Caller Address</label>
+                                        <input
+                                            type="text"
+                                            value={caller}
+                                            onChange={(e) => setCaller(e.target.value)}
+                                            className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 font-mono"
+                                            required
+                                        />
                                     </div>
-                                ) : (
-                                    <p className="text-red-800 dark:text-red-200">
-                                        ❌ {executionResult.message}
-                                    </p>
+                                </div>
+
+                                {/* Dynamic Inputs based on Method */}
+                                {method === 'transfer' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input placeholder="To Address" className="p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, to: e.target.value })} required />
+                                        <input placeholder="Amount" type="number" className="p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, amount: Number(e.target.value) })} required />
+                                    </div>
                                 )}
-                            </div>
-                        )}
+                                {method === 'balanceOf' && (
+                                    <input placeholder="Address" className="w-full p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, address: e.target.value })} required />
+                                )}
+                                {method === 'mint' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input placeholder="Mint To" className="p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, mintTo: e.target.value })} required />
+                                        <input placeholder="Amount" type="number" className="p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, mintAmount: Number(e.target.value) })} required />
+                                    </div>
+                                )}
+                                {method === 'deposit' && (
+                                    <input placeholder="Amount" type="number" className="w-full p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, amount: Number(e.target.value) })} required />
+                                )}
+                                {method === 'vote' && (
+                                    <select className="w-full p-2 border rounded" onChange={e => setMethodParams({ ...methodParams, option: e.target.value })} required>
+                                        <option value="">Select Option</option>
+                                        {selectedContract.state.options?.map((o: string) => (
+                                            <option key={o} value={o}>{o}</option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                <button type="submit" disabled={loading} className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                                    {loading ? 'Executing...' : 'Execute Transaction'}
+                                </button>
+                            </form>
+
+                            {result && (
+                                <div className={`mt-4 p-4 rounded-lg text-sm ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    <div className="font-bold">{result.success ? 'Success' : 'Error'}</div>
+                                    <div>{result.message}</div>
+                                    {result.data && <div className="mt-2 font-mono text-xs">{JSON.stringify(result.data)}</div>}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="clean-card p-12 text-center text-gray-500 flex flex-col items-center justify-center h-full">
+                        <div className="text-6xl mb-4 opacity-20">📜</div>
+                        <p>Select a contract to view details and interact</p>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
