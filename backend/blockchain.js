@@ -10,6 +10,11 @@ function Blockchain() {
     this.currentNodeUrl = process.argv[3] || `http://localhost:${port}`;
     this.networkNodes = [];
 
+    // Version System
+    this.version = "1.0.0";
+    this.createdAt = new Date().toISOString();
+    this.updatedAt = new Date().toISOString();
+
     // Ekonomi Modeli
     this.miningReward = 100; // Blok başına ödül
     this.totalSupply = 0;
@@ -23,6 +28,8 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
     const newBlock = {
         index: this.chain.length + 1,
         timestamp: Date.now(),
+        createdAt: new Date().toISOString(),
+        version: this.version,
         transactions: this.pendingTransactions,
         nonce: nonce,
         hash: hash,
@@ -30,14 +37,15 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
     };
 
     // Mining ödülü ile toplam arzı güncelle
-    // Not: Gerçek bir sistemde bu, coinbase transaction'dan hesaplanır.
-    // Burada basitleştirilmiş bir sayaç tutuyoruz.
     if (this.totalSupply < this.maxSupply) {
         this.totalSupply += this.miningReward;
     }
 
     this.pendingTransactions = [];
     this.chain.push(newBlock);
+
+    // Update blockchain timestamp
+    this.updatedAt = new Date().toISOString();
 
     return newBlock;
 };
@@ -54,7 +62,8 @@ Blockchain.prototype.createNewTransaction = function (amount, sender, recipient,
         recipient: recipient,
         transactionId: uuidv4().split('-').join(''),
         timestamp: Date.now(),
-        signature: signature // İşlemin gönderen tarafından imzalandığını kanıtlar
+        version: this.version,
+        signature: signature
     };
 
     return newTransaction;
@@ -65,10 +74,6 @@ Blockchain.prototype.addTransactionToPendingTransactions = function (transaction
     if (!this.verifyTransaction(transactionObj)) {
         throw new Error('Invalid transaction signature!');
     }
-
-    // Bakiye kontrolü (Basit versiyon - Genesis bloktan gelen paralar hariç)
-    // Gerçek bir sistemde gönderenin bakiyesi kontrol edilmeli.
-    // Şimdilik prototip olduğu için atlıyoruz veya basit bir kontrol ekleyebiliriz.
 
     this.pendingTransactions.push(transactionObj);
     return this.getLastBlock()['index'] + 1;
@@ -84,8 +89,6 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
     }
 
     const key = ec.keyFromPublic(transaction.sender, 'hex');
-    // İmzalanan veri: amount + recipient (Basitleştirilmiş)
-    // Gerçekte tüm transaction datası hashlenip imzalanmalı.
     const msgHash = sha256(transaction.amount.toString() + transaction.recipient);
 
     return key.verify(msgHash, transaction.signature);
@@ -154,13 +157,28 @@ Blockchain.prototype.getAddressData = function (address) {
 
     let balance = 0;
     addressTransactions.forEach(transaction => {
-        if (transaction.recipient === address) balance += parseInt(transaction.amount); // Gelen para (veya mesaj puanı)
-        if (transaction.sender === address) balance -= parseInt(transaction.amount); // Giden para
+        if (transaction.recipient === address) balance += parseInt(transaction.amount);
+        if (transaction.sender === address) balance -= parseInt(transaction.amount);
     });
 
     return {
         addressTransactions: addressTransactions,
         addressBalance: balance
+    };
+};
+
+// Get Blockchain Info (Version, Stats, Last Update)
+Blockchain.prototype.getBlockchainInfo = function () {
+    return {
+        version: this.version,
+        blockCount: this.chain.length,
+        pendingTransactions: this.pendingTransactions.length,
+        totalSupply: this.totalSupply,
+        maxSupply: this.maxSupply,
+        miningReward: this.miningReward,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+        lastBlock: this.getLastBlock()
     };
 };
 

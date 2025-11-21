@@ -244,6 +244,13 @@ app.get('/consensus', function (req, res) {
         });
 });
 
+
+// Get Blockchain Info (Version & Stats)
+app.get('/blockchain/info', function (req, res) {
+    const info = bitcoin.getBlockchainInfo();
+    res.json(info);
+});
+
 // Adres bilgilerini getir (Bakiye ve Geçmiş)
 app.get('/address/:address', function (req, res) {
     const address = req.params.address;
