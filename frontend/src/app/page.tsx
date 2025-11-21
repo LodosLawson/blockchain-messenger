@@ -44,7 +44,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white text-center">
             Quick Access
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Link href="/wallet" className="card-hover glass-card p-6 text-center group">
               <div className="text-4xl mb-3">💼</div>
               <p className="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
@@ -62,6 +62,16 @@ export default function Home() {
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Send messages
+              </p>
+            </Link>
+
+            <Link href="/contracts" className="card-hover glass-card p-6 text-center group">
+              <div className="text-4xl mb-3">📜</div>
+              <p className="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
+                Contracts
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Deploy & execute
               </p>
             </Link>
 
