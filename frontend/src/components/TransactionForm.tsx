@@ -74,7 +74,7 @@ export default function TransactionForm() {
 
   if (!privateKey) {
     return (
-      <div className="clean-card p-8 text-center animate-fade-in">
+      <div className="glass-premium p-8 text-center animate-fade-in">
         <div className="w-16 h-16 mx-auto mb-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
           <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -82,7 +82,7 @@ export default function TransactionForm() {
         </div>
         <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">Wallet Required</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">You need a wallet to send secure messages.</p>
-        <Link href="/wallet" className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl">
+        <Link href="/wallet" className="inline-flex items-center justify-center px-6 py-3 btn-premium bg-indigo-600 text-white rounded-xl shadow-lg">
           Create Wallet
         </Link>
       </div>
@@ -90,7 +90,7 @@ export default function TransactionForm() {
   }
 
   return (
-    <div className="clean-card p-8 animate-slide-in">
+    <div className="glass-premium p-8 animate-slide-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <span>✉️</span> Send Message
@@ -107,7 +107,7 @@ export default function TransactionForm() {
             type="text"
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono text-sm"
+            className="input-premium font-mono text-sm"
             placeholder="Enter recipient's public key..."
             required
           />
@@ -118,7 +118,7 @@ export default function TransactionForm() {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all min-h-[120px]"
+            className="input-premium min-h-[120px]"
             placeholder="Type your secure message here..."
             required
           />
@@ -131,7 +131,7 @@ export default function TransactionForm() {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="input-premium"
               placeholder="0.00"
             />
             <div className="absolute right-4 top-3 text-gray-400 font-bold text-sm">COIN</div>
@@ -141,7 +141,7 @@ export default function TransactionForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full btn-premium py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -158,8 +158,8 @@ export default function TransactionForm() {
 
         {status && (
           <div className={`p-4 rounded-lg text-sm font-medium animate-fade-in ${status.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-              status.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-                'bg-blue-100 text-blue-800 border border-blue-200'
+            status.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+              'bg-blue-100 text-blue-800 border border-blue-200'
             }`}>
             {status.message}
           </div>

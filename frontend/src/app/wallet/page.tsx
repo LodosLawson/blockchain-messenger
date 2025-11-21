@@ -87,23 +87,23 @@ export default function WalletPage() {
                     {/* Sol Kolon: Erişim ve Bilgi */}
                     <div className="space-y-8">
                         {/* Cüzdan Erişimi / Oluşturma */}
-                        <div className="glass-card p-6">
+                        <div className="glass-premium p-6">
                             <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Access / Create</h2>
 
                             <div className="space-y-4">
                                 <button
                                     onClick={createWallet}
-                                    className="w-full btn-modern"
+                                    className="w-full btn-premium py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg"
                                 >
                                     Create New Wallet
                                 </button>
 
                                 <div className="relative">
                                     <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-300"></div>
+                                        <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
                                     </div>
                                     <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or access existing</span>
+                                        <span className="px-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-500 rounded-full">Or access existing</span>
                                     </div>
                                 </div>
 
@@ -113,11 +113,11 @@ export default function WalletPage() {
                                         placeholder="Enter Private Key"
                                         value={privateKey}
                                         onChange={(e) => setPrivateKey(e.target.value)}
-                                        className="w-full input-modern"
+                                        className="w-full input-premium mb-3"
                                     />
                                     <button
                                         onClick={accessWallet}
-                                        className="mt-2 w-full btn-modern"
+                                        className="w-full btn-premium py-3 px-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700"
                                     >
                                         Access Wallet
                                     </button>
@@ -127,7 +127,7 @@ export default function WalletPage() {
 
                         {/* Cüzdan Detayları */}
                         {publicKey && (
-                            <div className="glass-card p-6">
+                            <div className="glass-premium p-6">
                                 <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Wallet Info</h2>
 
                                 <div className="mb-4">
@@ -168,12 +168,12 @@ export default function WalletPage() {
                                                 placeholder="Choose a nickname"
                                                 value={nicknameInput}
                                                 onChange={(e) => setNicknameInput(e.target.value)}
-                                                className="w-full input-modern"
+                                                className="w-full input-premium"
                                                 maxLength={20}
                                             />
                                             <button
                                                 onClick={registerNickname}
-                                                className="w-full btn-modern"
+                                                className="w-full btn-premium py-2 px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
                                             >
                                                 Register Nickname
                                             </button>
@@ -193,7 +193,7 @@ export default function WalletPage() {
                     {/* Sağ Kolon: İşlem Yapma ve Geçmiş */}
                     <div className="space-y-8">
                         {publicKey && (
-                            <div className="glass-card overflow-hidden">
+                            <div className="glass-premium overflow-hidden">
                                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
                                     <h2 className="text-xl font-semibold text-white">Send Transaction</h2>
                                 </div>
@@ -205,7 +205,7 @@ export default function WalletPage() {
 
                         {/* İşlem Geçmişi */}
                         {transactions.length > 0 && (
-                            <div className="glass-card p-6">
+                            <div className="glass-premium p-6">
                                 <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Transaction History</h2>
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full text-sm">
