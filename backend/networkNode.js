@@ -13,6 +13,32 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
+// Structured Logger for Google Cloud
+function log(severity, message, data = {}) {
+    console.log(JSON.stringify({
+        severity,
+        message,
+        timestamp: new Date().toISOString(),
+        ...data
+    }));
+}
+
+// Root endpoint
+app.get('/', function (req, res) {
+    log('INFO', 'Root endpoint hit');
+    res.send('Blockchain Node is running');
+});
+
+// Health Check for Cloud Run
+app.get('/health', function (req, res) {
+    res.status(200).send('OK');
+});
+
+// Blockchain endpoint
+app.get('/blockchain', function (req, res) {
+    res.send(bitcoin);
+});
+
 // Yeni işlem (mesaj) oluştur
 app.post('/transaction', function (req, res) {
     const newTransaction = req.body;
