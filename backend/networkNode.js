@@ -260,6 +260,78 @@ app.get('/address/:address', function (req, res) {
     });
 });
 
+
+
+// Smart Contract Endpoints
+const { getAllTemplates, validateParams } = require('./contractTemplates');
+
+// Get all contract templates
+app.get('/contract/templates', function (req, res) {
+    const templates = getAllTemplates();
+    res.json({ templates });
+});
+
+// Deploy a new contract
+app.post('/contract/deploy', function (req, res) {
+    const { type, creator, params } = req.body;
+
+    if (!type || !creator || !params) {
+        return res.status(400).json({ error: 'type, creator, and params are required' });
+    }
+
+    // Validate parameters
+    const validation = validateParams(type, params);
+    if (!validation.valid) {
+        return res.status(400).json({ error: validation.message });
+    }
+
+    try {
+        const contract = bitcoin.deployContract(type, creator, params);
+        log('INFO', 'Contract deployed', { contractId: contract.contractId, type });
+        res.json({ 
+            note: 'Contract deployed successfully',
+            contract: contract.getInfo()
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Execute contract method
+app.post('/contract/execute', function (req, res) {
+    const { contractId, method, params, caller } = req.body;
+
+    if (!contractId || !method || !caller) {
+        return res.status(400).json({ error: 'contractId, method, and caller are required' });
+    }
+
+    try {
+        const result = bitcoin.executeContract(contractId, method, params || {}, caller);
+        log('INFO', 'Contract executed', { contractId, method, success: result.success });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get contract by ID
+app.get('/contract/:contractId', function (req, res) {
+    const contractId = req.params.contractId;
+    const contract = bitcoin.getContract(contractId);
+
+    if (!contract) {
+        return res.status(404).json({ error: 'Contract not found' });
+    }
+
+    res.json({ contract });
+});
+
+// Get all contracts
+app.get('/contracts', function (req, res) {
+    const contracts = bitcoin.getAllContracts();
+    res.json({ contracts, count: contracts.length });
+});
+
 // Nickname System Endpoints
 
 // Register a nickname for a public key

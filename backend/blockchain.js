@@ -2,10 +2,12 @@ const sha256 = require('sha256');
 const { v4: uuidv4 } = require('uuid');
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
+const SmartContract = require('./smartContract');
 
 function Blockchain() {
     this.chain = [];
     this.pendingTransactions = [];
+    this.contracts = []; // Smart contracts
     const port = process.argv[2] || 3001;
     this.currentNodeUrl = process.argv[3] || `http://localhost:${port}`;
     this.networkNodes = [];
@@ -42,6 +44,7 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
     }
 
     this.pendingTransactions = [];
+    this.contracts = []; // Smart contracts
     this.chain.push(newBlock);
 
     // Update blockchain timestamp
@@ -180,6 +183,34 @@ Blockchain.prototype.getBlockchainInfo = function () {
         updatedAt: this.updatedAt,
         lastBlock: this.getLastBlock()
     };
+};
+
+// Deploy Smart Contract
+Blockchain.prototype.deployContract = function (type, creator, params) {
+    const contract = new SmartContract(type, creator, params);
+    this.contracts.push(contract);
+    return contract;
+};
+
+// Execute Smart Contract Method
+Blockchain.prototype.executeContract = function (contractId, method, params, caller) {
+    const contract = this.contracts.find(c => c.contractId === contractId);
+    if (!contract) {
+        return { success: false, message: 'Contract not found' };
+    }
+
+    return contract.execute(method, params, caller);
+};
+
+// Get Contract by ID
+Blockchain.prototype.getContract = function (contractId) {
+    const contract = this.contracts.find(c => c.contractId === contractId);
+    return contract ? contract.getInfo() : null;
+};
+
+// Get All Contracts
+Blockchain.prototype.getAllContracts = function () {
+    return this.contracts.map(c => c.getInfo());
 };
 
 module.exports = Blockchain;
