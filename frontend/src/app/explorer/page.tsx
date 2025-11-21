@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import { API_URL } from '../../config';
 
 interface Transaction {
     amount: string;
@@ -32,7 +33,7 @@ export default function ExplorerPage() {
 
     const fetchBlockchain = async () => {
         try {
-            const response = await axios.get('http://localhost:3001/blockchain');
+            const response = await axios.get(`${API_URL}/blockchain`);
             setBlockchain(response.data);
         } catch (error) {
             console.error("Error fetching blockchain:", error);
@@ -48,26 +49,26 @@ export default function ExplorerPage() {
     if (!blockchain) return <div className="flex justify-center items-center h-screen text-gray-500">Loading Blockchain Data...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto space-y-8">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Blockchain Explorer</h1>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-6">
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Blockchain Explorer</h1>
                     <div className="text-sm text-gray-500">
                         Total Blocks: <span className="font-mono font-bold text-indigo-600">{blockchain.chain.length}</span>
                     </div>
                 </div>
 
                 {/* Son Bloklar ve İşlemler Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
 
                     {/* Son Bloklar */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h2 className="font-semibold text-gray-800 dark:text-white">Latest Blocks</h2>
+                        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h2 className="font-semibold text-sm sm:text-base text-gray-800 dark:text-white">Latest Blocks</h2>
                         </div>
                         <div className="divide-y divide-gray-200 dark:divide-gray-700">
                             {blockchain.chain.slice().reverse().slice(0, 10).map((block) => (
-                                <div key={block.index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition cursor-pointer" onClick={() => setSelectedBlock(block)}>
+                                <div key={block.index} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition cursor-pointer active:bg-gray-100 dark:active:bg-gray-700" onClick={() => setSelectedBlock(block)}>
                                     <div className="flex justify-between items-center mb-1">
                                         <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-indigo-900 dark:text-indigo-300">
                                             #{block.index}
@@ -75,10 +76,10 @@ export default function ExplorerPage() {
                                         <span className="text-xs text-gray-500">{new Date(block.timestamp).toLocaleTimeString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <div className="text-sm font-mono text-gray-600 dark:text-gray-400 truncate w-48">
+                                        <div className="text-xs sm:text-sm font-mono text-gray-600 dark:text-gray-400 truncate max-w-[150px] sm:max-w-[200px]">
                                             {block.hash}
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-500 ml-2 flex-shrink-0">
                                             {block.transactions.length} Txns
                                         </div>
                                     </div>
@@ -91,35 +92,35 @@ export default function ExplorerPage() {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
                         {selectedBlock ? (
                             <>
-                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20">
-                                    <h2 className="font-semibold text-indigo-800 dark:text-indigo-300">Block #{selectedBlock.index} Details</h2>
-                                    <button onClick={() => setSelectedBlock(null)} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
+                                <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20">
+                                    <h2 className="font-semibold text-sm sm:text-base text-indigo-800 dark:text-indigo-300">Block #{selectedBlock.index} Details</h2>
+                                    <button onClick={() => setSelectedBlock(null)} className="text-xs sm:text-sm px-2 py-1 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 active:bg-gray-200 dark:active:bg-gray-500 transition">Close</button>
                                 </div>
-                                <div className="p-4 space-y-4">
+                                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[60vh] sm:max-h-none overflow-y-auto">
                                     <div>
                                         <label className="text-xs text-gray-500 uppercase">Hash</label>
-                                        <p className="font-mono text-sm break-all text-gray-800 dark:text-gray-200">{selectedBlock.hash}</p>
+                                        <p className="font-mono text-xs sm:text-sm break-all text-gray-800 dark:text-gray-200">{selectedBlock.hash}</p>
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-500 uppercase">Previous Hash</label>
-                                        <p className="font-mono text-sm break-all text-gray-800 dark:text-gray-200">{selectedBlock.previousBlockHash}</p>
+                                        <p className="font-mono text-xs sm:text-sm break-all text-gray-800 dark:text-gray-200">{selectedBlock.previousBlockHash}</p>
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-500 uppercase">Nonce</label>
-                                        <p className="font-mono text-sm text-gray-800 dark:text-gray-200">{selectedBlock.nonce}</p>
+                                        <p className="font-mono text-xs sm:text-sm text-gray-800 dark:text-gray-200">{selectedBlock.nonce}</p>
                                     </div>
 
                                     <div>
                                         <label className="text-xs text-gray-500 uppercase mb-2 block">Transactions</label>
                                         <div className="space-y-2">
                                             {selectedBlock.transactions.map(tx => (
-                                                <div key={tx.transactionId} className="bg-gray-50 p-3 rounded border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
-                                                    <div className="flex justify-between text-xs mb-1">
-                                                        <span className="text-indigo-600 font-mono truncate w-24" title={tx.sender}>{tx.sender === "00" ? "MINING REWARD" : tx.sender}</span>
-                                                        <span className="text-gray-400">➔</span>
-                                                        <span className="text-indigo-600 font-mono truncate w-24" title={tx.recipient}>{tx.recipient}</span>
+                                                <div key={tx.transactionId} className="bg-gray-50 p-2 sm:p-3 rounded border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                                                    <div className="flex flex-col sm:flex-row sm:justify-between text-xs mb-1 gap-1">
+                                                        <span className="text-indigo-600 font-mono truncate max-w-[120px] sm:max-w-none" title={tx.sender}>{tx.sender === "00" ? "MINING REWARD" : tx.sender}</span>
+                                                        <span className="text-gray-400 hidden sm:inline">➔</span>
+                                                        <span className="text-indigo-600 font-mono truncate max-w-[120px] sm:max-w-none" title={tx.recipient}>{tx.recipient}</span>
                                                     </div>
-                                                    <div className="text-right font-bold text-gray-800 dark:text-gray-200">
+                                                    <div className="text-right font-bold text-sm sm:text-base text-gray-800 dark:text-gray-200">
                                                         {tx.amount} COIN
                                                     </div>
                                                 </div>
