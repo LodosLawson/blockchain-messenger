@@ -9,6 +9,9 @@ const rp = require('request-promise');
 const nodeAddress = uuidv4().split('-').join('');
 const bitcoin = new Blockchain();
 
+// User Profiles for Nickname System
+const userProfiles = {};
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
@@ -248,6 +251,80 @@ app.get('/address/:address', function (req, res) {
     res.json({
         addressData: addressData
     });
+});
+
+// Nickname System Endpoints
+
+// Register a nickname for a public key
+app.post('/register-nickname', function (req, res) {
+    const { publicKey, nickname } = req.body;
+
+    if (!publicKey || !nickname) {
+        return res.status(400).json({ error: 'publicKey and nickname are required' });
+    }
+
+    // Validate nickname format
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(nickname)) {
+        return res.status(400).json({ error: 'Nickname must be 3-20 characters, alphanumeric and underscore only' });
+    }
+
+    // Check if nickname already exists
+    const existingUser = Object.values(userProfiles).find(
+        profile => profile.nickname.toLowerCase() === nickname.toLowerCase()
+    );
+
+    if (existingUser) {
+        return res.status(409).json({ error: 'Nickname already taken' });
+    }
+
+    // Register nickname
+    userProfiles[publicKey] = {
+        nickname: nickname,
+        registeredAt: Date.now()
+    };
+
+    log('INFO', 'Nickname registered', { publicKey, nickname });
+    res.json({ note: 'Nickname registered successfully', nickname });
+});
+
+// Search users by nickname
+app.get('/search-users/:query', function (req, res) {
+    const query = req.params.query.toLowerCase();
+
+    const results = Object.entries(userProfiles)
+        .filter(([publicKey, profile]) =>
+            profile.nickname.toLowerCase().includes(query)
+        )
+        .map(([publicKey, profile]) => ({
+            publicKey,
+            nickname: profile.nickname,
+            registeredAt: profile.registeredAt
+        }));
+
+    res.json({ users: results });
+});
+
+// Get nickname for a public key
+app.get('/get-nickname/:publicKey', function (req, res) {
+    const publicKey = req.params.publicKey;
+    const profile = userProfiles[publicKey];
+
+    if (profile) {
+        res.json({ nickname: profile.nickname, registeredAt: profile.registeredAt });
+    } else {
+        res.status(404).json({ error: 'Nickname not found' });
+    }
+});
+
+// Get all registered users
+app.get('/users', function (req, res) {
+    const users = Object.entries(userProfiles).map(([publicKey, profile]) => ({
+        publicKey,
+        nickname: profile.nickname,
+        registeredAt: profile.registeredAt
+    }));
+
+    res.json({ users });
 });
 
 const port = process.argv[2] || 3001;

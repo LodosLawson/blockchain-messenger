@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { generateKeys, getPublicFromPrivate } from '../../utils/crypto';
 import axios from 'axios';
 import TransactionForm from '../../components/TransactionForm';
+import { API_URL } from '../../config';
 
 export default function WalletPage() {
     const [privateKey, setPrivateKey] = useState('');
@@ -10,6 +11,9 @@ export default function WalletPage() {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [showPrivate, setShowPrivate] = useState(false);
+    const [nickname, setNickname] = useState('');
+    const [currentNickname, setCurrentNickname] = useState('');
+    const [nicknameInput, setNicknameInput] = useState('');
 
     const createWallet = () => {
         const keys = generateKeys();
@@ -31,11 +35,43 @@ export default function WalletPage() {
 
     const fetchBalance = async (address: string) => {
         try {
-            const res = await axios.get(`http://localhost:3001/address/${address}`);
+            const res = await axios.get(`${API_URL}/address/${address}`);
             setBalance(res.data.addressData.addressBalance);
             setTransactions(res.data.addressData.addressTransactions);
+
+            // Also fetch nickname
+            fetchNickname(address);
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const fetchNickname = async (publicKey: string) => {
+        try {
+            const res = await axios.get(`${API_URL}/get-nickname/${publicKey}`);
+            setCurrentNickname(res.data.nickname);
+        } catch (error) {
+            // Nickname not found, that's okay
+            setCurrentNickname('');
+        }
+    };
+
+    const registerNickname = async () => {
+        if (!nicknameInput || !publicKey) {
+            alert('Please enter a nickname');
+            return;
+        }
+
+        try {
+            const res = await axios.post(`${API_URL}/register-nickname`, {
+                publicKey,
+                nickname: nicknameInput
+            });
+            setCurrentNickname(nicknameInput);
+            setNicknameInput('');
+            alert('Nickname registered successfully!');
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Failed to register nickname');
         }
     };
 
@@ -111,6 +147,35 @@ export default function WalletPage() {
                                     </button>
                                 </div>
                                 <p className="text-xs text-red-500 mt-1">Do not share your private key!</p>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-xs text-gray-500 uppercase mb-2">Nickname</label>
+                                {currentNickname ? (
+                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded">
+                                        <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
+                                            @{currentNickname}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Choose a nickname"
+                                            value={nicknameInput}
+                                            onChange={(e) => setNicknameInput(e.target.value)}
+                                            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            maxLength={20}
+                                        />
+                                        <button
+                                            onClick={registerNickname}
+                                            className="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm"
+                                        >
+                                            Register Nickname
+                                        </button>
+                                        <p className="text-xs text-gray-500">3-20 characters, alphanumeric and underscore only</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

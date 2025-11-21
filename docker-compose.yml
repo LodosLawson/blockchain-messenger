@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  blockchain-node:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    command: [ "node", "networkNode.js", "3001", "http://localhost:3002" ]
+    restart: unless-stopped
+    container_name: blockchain-local-node
