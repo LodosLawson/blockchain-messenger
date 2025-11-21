@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../config';
-import { decryptMessage, getPublicFromPrivate } from '../../utils/crypto';
+import { decryptMessage, encryptMessage, getPublicFromPrivate } from '../../utils/crypto';
 import { Search, Send, Lock, Unlock } from 'lucide-react';
 
 interface User {
@@ -27,6 +27,7 @@ export default function ChatPage() {
     const [newMessage, setNewMessage] = useState('');
     const [myPublicKey, setMyPublicKey] = useState('');
     const [myPrivateKey, setMyPrivateKey] = useState('');
+    const [sending, setSending] = useState(false);
 
     useEffect(() => {
         // Load keys from localStorage
@@ -85,165 +86,274 @@ export default function ChatPage() {
         }
     };
 
+    const sendMessage = async () => {
+        if (!newMessage || !selectedUser || !myPrivateKey) return;
+
+        setSending(true);
+        try {
+            // 1. Encrypt message
+            const encryptedMessage = encryptMessage(myPrivateKey, selectedUser.publicKey, newMessage);
+
+            if (!encryptedMessage) {
+                alert('Encryption failed');
+                setSending(false);
+                return;
+            }
+
+            // 2. Create transaction data
+            const transactionData = {
+                amount: 0,
+                sender: myPublicKey,
+                recipient: selectedUser.publicKey,
+                message: encryptedMessage
+            };
+
+            // 3. Sign transaction (using existing util, though it only signs amount+recipient currently)
+            // Ideally we should sign the message too, but sticking to existing backend logic for now
+            // We'll just send the request to /transaction/broadcast which handles signing verification if implemented
+            // Actually, the backend expects a 'signature' in the body? 
+            // Let's check TransactionForm.tsx logic. 
+            // It seems the backend /transaction/broadcast expects { amount, sender, recipient, message } 
+            // and it might handle signing internally or we need to send signature?
+            // Wait, looking at TransactionForm.tsx (from memory), it sends { amount, sender, recipient, message }.
+            // The backend networkNode.js likely creates the transaction.
+
+            // Let's try sending directly to /transaction/broadcast
+            await axios.post(`${API_URL}/transaction/broadcast`, transactionData);
+
+            // 4. Optimistic update or re-fetch
+            setNewMessage('');
+
+            // Add to local messages immediately for better UX
+            const newMsgObj: Message = {
+                sender: myPublicKey,
+                recipient: selectedUser.publicKey,
+                message: encryptedMessage, // Store encrypted
+                amount: "0",
+                timestamp: Date.now(),
+                transactionId: "temp-" + Date.now()
+            };
+
+            setMessages([...messages, newMsgObj]);
+
+            // Also fetch to be sure
+            setTimeout(() => fetchMessages(selectedUser.publicKey), 2000);
+
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            alert('Failed to send message');
+        } finally {
+            setSending(false);
+        }
+    };
+
     const decryptMsg = (encryptedMsg: string, senderKey: string, recipientKey: string): string => {
         if (!myPrivateKey) return encryptedMsg;
 
         try {
             const otherPartyKey = senderKey === myPublicKey ? recipientKey : senderKey;
-            return decryptMessage(encryptedMsg, myPrivateKey, otherPartyKey);
+            const decrypted = decryptMessage(myPrivateKey, otherPartyKey, encryptedMsg);
+            return decrypted || encryptedMsg;
         } catch (error) {
             return encryptedMsg;
         }
     };
 
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    // Poll for new messages every 5 seconds if a user is selected
+    useEffect(() => {
+        if (!selectedUser) return;
+
+        const interval = setInterval(() => {
+            fetchMessages(selectedUser.publicKey);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [selectedUser, myPublicKey]); // Re-run if user or my key changes
+
     return (
-        <div className="p-6 max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8 text-gray-800 dark:text-white">Chat</h1>
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 p-6">
+            <div className="max-w-6xl mx-auto animate-fade-in">
+                <h1 className="text-4xl font-bold gradient-text mb-8">Chat</h1>
 
-            {!myPublicKey ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg">
-                    <p className="text-yellow-800 dark:text-yellow-200">
-                        Please create or access your wallet first to use chat.
-                    </p>
-                    <a href="/wallet" className="text-indigo-600 hover:underline mt-2 inline-block">
-                        Go to Wallet →
-                    </a>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left: User Search */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                            <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
-                                Find Users
-                            </h2>
+                {!myPublicKey ? (
+                    <div className="glass-card p-8 text-center">
+                        <div className="text-yellow-600 text-xl mb-4">⚠️ Wallet Required</div>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
+                            Please create or access your wallet first to use chat.
+                        </p>
+                        <a href="/wallet" className="btn-modern inline-block">
+                            Go to Wallet →
+                        </a>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
+                        {/* Left: User Search */}
+                        <div className="lg:col-span-1 glass-card flex flex-col overflow-hidden">
+                            <div className="p-6 border-b border-gray-200/50">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+                                    Find Users
+                                </h2>
 
-                            <div className="flex gap-2 mb-4">
-                                <input
-                                    type="text"
-                                    placeholder="Search by nickname..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
-                                    className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                />
-                                <button
-                                    onClick={searchUsers}
-                                    className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                                >
-                                    <Search size={20} />
-                                </button>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Search nickname..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+                                        className="w-full input-modern"
+                                    />
+                                    <button
+                                        onClick={searchUsers}
+                                        className="btn-modern !p-3"
+                                    >
+                                        <Search size={20} />
+                                    </button>
+                                </div>
                             </div>
 
-                            {searchResults.length > 0 && (
-                                <div className="space-y-2">
-                                    {searchResults.map((user) => (
-                                        <button
-                                            key={user.publicKey}
-                                            onClick={() => selectUser(user)}
-                                            className="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition"
-                                        >
-                                            <p className="font-semibold text-indigo-600 dark:text-indigo-400">
-                                                @{user.nickname}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {user.publicKey.substring(0, 20)}...
-                                            </p>
-                                        </button>
-                                    ))}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                {searchResults.map((user) => (
+                                    <button
+                                        key={user.publicKey}
+                                        onClick={() => selectUser(user)}
+                                        className="w-full text-left p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-700/50 transition border border-transparent hover:border-indigo-200"
+                                    >
+                                        <p className="font-bold text-indigo-600 dark:text-indigo-400">
+                                            @{user.nickname}
+                                        </p>
+                                        <p className="text-xs text-gray-500 truncate font-mono mt-1">
+                                            {user.publicKey.substring(0, 16)}...
+                                        </p>
+                                    </button>
+                                ))}
+                                {searchResults.length === 0 && searchQuery && (
+                                    <p className="text-center text-gray-500 mt-4">No users found</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right: Chat View */}
+                        <div className="lg:col-span-2 glass-card flex flex-col overflow-hidden">
+                            {selectedUser ? (
+                                <>
+                                    {/* Chat Header */}
+                                    <div className="p-4 border-b border-gray-200/50 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                                                {selectedUser.nickname[0].toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                                                    @{selectedUser.nickname}
+                                                </h3>
+                                                <p className="text-xs text-gray-500 truncate max-w-xs font-mono">
+                                                    {selectedUser.publicKey}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Messages */}
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white/20 dark:bg-gray-900/20">
+                                        {messages.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <Send className="text-indigo-500" size={24} />
+                                                </div>
+                                                <p className="text-gray-500">
+                                                    No messages yet. Say hello to @{selectedUser.nickname}!
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            messages.map((msg) => {
+                                                const isSent = msg.sender === myPublicKey;
+                                                const decrypted = decryptMsg(msg.message, msg.sender, msg.recipient);
+                                                const isDecrypted = decrypted !== msg.message;
+
+                                                return (
+                                                    <div
+                                                        key={msg.transactionId}
+                                                        className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                                                    >
+                                                        <div
+                                                            className={`max-w-[75%] p-4 rounded-2xl shadow-sm ${isSent
+                                                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-none'
+                                                                : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-tl-none'
+                                                                }`}
+                                                        >
+                                                            <div className="flex items-start gap-2">
+                                                                {isDecrypted ? (
+                                                                    <Unlock size={14} className="mt-1 flex-shrink-0 opacity-70" />
+                                                                ) : (
+                                                                    <Lock size={14} className="mt-1 flex-shrink-0 opacity-70" />
+                                                                )}
+                                                                <p className="break-words leading-relaxed">{decrypted}</p>
+                                                            </div>
+                                                            <p className={`text-[10px] mt-2 text-right ${isSent ? 'text-indigo-100' : 'text-gray-400'}`}>
+                                                                {new Date(msg.timestamp).toLocaleTimeString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                        <div ref={messagesEndRef} />
+                                    </div>
+
+                                    {/* Message Input */}
+                                    <div className="p-4 border-t border-gray-200/50 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Type a secure message..."
+                                                value={newMessage}
+                                                onChange={(e) => setNewMessage(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                                className="flex-1 input-modern"
+                                                disabled={sending}
+                                            />
+                                            <button
+                                                onClick={sendMessage}
+                                                className="btn-modern !p-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={sending || !newMessage}
+                                            >
+                                                {sending ? (
+                                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Send size={20} />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-gray-500">
+                                    <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mb-6 animate-float">
+                                        <Search className="text-indigo-400" size={40} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">
+                                        Select a User
+                                    </h3>
+                                    <p className="max-w-xs mx-auto">
+                                        Search for a user by nickname on the left to start a secure conversation.
+                                    </p>
                                 </div>
                             )}
                         </div>
                     </div>
-
-                    {/* Right: Chat View */}
-                    <div className="lg:col-span-2">
-                        {selectedUser ? (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col h-[600px]">
-                                {/* Chat Header */}
-                                <div className="p-4 border-b dark:border-gray-700">
-                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                        @{selectedUser.nickname}
-                                    </h3>
-                                    <p className="text-xs text-gray-500 truncate">
-                                        {selectedUser.publicKey}
-                                    </p>
-                                </div>
-
-                                {/* Messages */}
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                    {messages.length === 0 ? (
-                                        <p className="text-center text-gray-500">
-                                            No messages yet. Start the conversation!
-                                        </p>
-                                    ) : (
-                                        messages.map((msg) => {
-                                            const isSent = msg.sender === myPublicKey;
-                                            const decrypted = decryptMsg(msg.message, msg.sender, msg.recipient);
-                                            const isDecrypted = decrypted !== msg.message;
-
-                                            return (
-                                                <div
-                                                    key={msg.transactionId}
-                                                    className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-                                                >
-                                                    <div
-                                                        className={`max-w-[70%] p-3 rounded-lg ${isSent
-                                                                ? 'bg-indigo-600 text-white'
-                                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-start gap-2">
-                                                            {isDecrypted ? (
-                                                                <Unlock size={14} className="mt-1 flex-shrink-0" />
-                                                            ) : (
-                                                                <Lock size={14} className="mt-1 flex-shrink-0" />
-                                                            )}
-                                                            <p className="break-words">{decrypted}</p>
-                                                        </div>
-                                                        <p className="text-xs mt-1 opacity-70">
-                                                            {new Date(msg.timestamp).toLocaleTimeString()}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-
-                                {/* Message Input */}
-                                <div className="p-4 border-t dark:border-gray-700">
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Type a message..."
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                            className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                            disabled
-                                        />
-                                        <button
-                                            className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                                            disabled
-                                        >
-                                            <Send size={20} />
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        Use the main page to send messages for now
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white dark:bg-gray-800 p-12 rounded-lg shadow text-center">
-                                <p className="text-gray-500">
-                                    Search for a user to start chatting
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

@@ -113,13 +113,28 @@ export default function WalletPage() {
                                         placeholder="Enter Private Key"
                                         value={privateKey}
                                         onChange={(e) => setPrivateKey(e.target.value)}
-                                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        className="w-full input-modern"
                                     />
                                     <button
                                         onClick={accessWallet}
-                                        className="mt-2 w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+                                        className="mt-2 w-full btn-modern"
                                     >
                                         Access Wallet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cüzdan Detayları */}
+                        {publicKey && (
+                            <div className="glass-card p-6">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Wallet Info</h2>
+
+                                <div className="mb-4">
+                                    <label className="block text-xs text-gray-500 uppercase">Public Address</label>
+                                    <p className="text-sm font-mono break-all bg-gray-100 p-2 rounded dark:bg-gray-700 dark:text-gray-300">
+                                        {publicKey}
+                                    </p>
                                 </div>
 
                                 <div className="mb-4">
@@ -153,12 +168,12 @@ export default function WalletPage() {
                                                 placeholder="Choose a nickname"
                                                 value={nicknameInput}
                                                 onChange={(e) => setNicknameInput(e.target.value)}
-                                                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                className="w-full input-modern"
                                                 maxLength={20}
                                             />
                                             <button
                                                 onClick={registerNickname}
-                                                className="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm"
+                                                className="w-full btn-modern"
                                             >
                                                 Register Nickname
                                             </button>
@@ -173,59 +188,57 @@ export default function WalletPage() {
                                 </div>
                             </div>
                         )}
-                        </div>
+                    </div>
 
-                        {/* Sağ Kolon: İşlem Yapma ve Geçmiş */}
-                        <div className="space-y-8">
-                            {publicKey && (
-                                <div className="bg-white rounded-lg shadow dark:bg-gray-800 overflow-hidden">
-                                    {/* Transaction Form Component'i buraya ekliyoruz, ancak prop geçmemiz gerekebilir mi? 
-                                TransactionForm kendi state'ini tutuyor, ama private key'i otomatik doldurabiliriz.
-                                Şimdilik TransactionForm'u olduğu gibi kullanıyoruz, kullanıcı key'i tekrar girebilir veya kopyalayabilir.
-                                İdealde TransactionForm'a prop eklemeliyiz.
-                             */}
-                                    <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Send Transaction</h2>
-                                    </div>
+                    {/* Sağ Kolon: İşlem Yapma ve Geçmiş */}
+                    <div className="space-y-8">
+                        {publicKey && (
+                            <div className="glass-card overflow-hidden">
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+                                    <h2 className="text-xl font-semibold text-white">Send Transaction</h2>
+                                </div>
+                                <div className="p-6">
                                     <TransactionForm />
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {/* İşlem Geçmişi */}
-                            {transactions.length > 0 && (
-                                <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-800">
-                                    <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Transaction History</h2>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full text-sm">
-                                            <thead>
-                                                <tr className="bg-gray-50 dark:bg-gray-700">
-                                                    <th className="p-2 text-left">Type</th>
-                                                    <th className="p-2 text-left">Amount</th>
-                                                    <th className="p-2 text-left">From/To</th>
+                        {/* İşlem Geçmişi */}
+                        {transactions.length > 0 && (
+                            <div className="glass-card p-6">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Transaction History</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-50 dark:bg-gray-700">
+                                                <th className="p-2 text-left">Type</th>
+                                                <th className="p-2 text-left">Amount</th>
+                                                <th className="p-2 text-left">From/To</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {transactions.map((tx: any, idx) => (
+                                                <tr key={idx} className="border-b dark:border-gray-700">
+                                                    <td className="p-2">
+                                                        {tx.sender === publicKey ?
+                                                            <span className="text-red-500">Sent</span> :
+                                                            <span className="text-green-500">Received</span>
+                                                        }
+                                                    </td>
+                                                    <td className="p-2 font-medium">{tx.amount}</td>
+                                                    <td className="p-2 font-mono text-xs truncate max-w-xs">
+                                                        {tx.sender === publicKey ? tx.recipient : tx.sender}
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                {transactions.map((tx: any, idx) => (
-                                                    <tr key={idx} className="border-b dark:border-gray-700">
-                                                        <td className="p-2">
-                                                            {tx.sender === publicKey ?
-                                                                <span className="text-red-500">Sent</span> :
-                                                                <span className="text-green-500">Received</span>
-                                                            }
-                                                        </td>
-                                                        <td className="p-2 font-medium">{tx.amount}</td>
-                                                        <td className="p-2 font-mono text-xs truncate max-w-xs">
-                                                            {tx.sender === publicKey ? tx.recipient : tx.sender}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
-                );
+            </div>
+        </div>
+    );
 }
