@@ -21,6 +21,11 @@ function Blockchain() {
     this.totalSupply = 0;
     this.maxSupply = 100000000; // 100 Milyon Coin
 
+    // Mining Parametreleri
+    this.difficulty = 4; // Başlangıç difficulty (hash'in başında kaç sıfır olacak)
+    this.targetBlockTime = 10000; // Hedef blok süresi (ms) - 10 saniye
+    this.difficultyAdjustmentInterval = 10; // Her 10 blokta bir difficulty ayarla
+
     // Genesis Block
     this.createNewBlock(100, '0', '0');
 
@@ -37,7 +42,8 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
         transactions: this.pendingTransactions,
         nonce: nonce,
         hash: hash,
-        previousBlockHash: previousBlockHash
+        previousBlockHash: previousBlockHash,
+        difficulty: this.difficulty // Bloğun oluşturulduğu andaki difficulty
     };
 
     // Mining ödülü ile toplam arzı güncelle
@@ -50,6 +56,9 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
 
     // Update blockchain timestamp
     this.updatedAt = new Date().toISOString();
+
+    // Difficulty ayarlama (her difficultyAdjustmentInterval blokta bir)
+    this.adjustDifficulty();
 
     return newBlock;
 };
@@ -118,8 +127,9 @@ Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, 
 Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData) {
     let nonce = 0;
     let hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
+    const target = '0'.repeat(this.difficulty); // Dinamik difficulty
 
-    while (hash.substring(0, 4) !== '0000') {
+    while (hash.substring(0, this.difficulty) !== target) {
         nonce++;
         hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
     }
@@ -135,7 +145,9 @@ Blockchain.prototype.chainIsValid = function (blockchain) {
         const prevBlock = blockchain[i - 1];
 
         const blockHash = this.hashBlock(prevBlock['hash'], { transactions: currentBlock['transactions'], index: currentBlock['index'] }, currentBlock['nonce']);
-        if (blockHash.substring(0, 4) !== '0000') validChain = false;
+        // Dinamik difficulty kontrolü
+        const target = '0'.repeat(this.difficulty);
+        if (blockHash.substring(0, this.difficulty) !== target) validChain = false;
 
         if (currentBlock['previousBlockHash'] !== prevBlock['hash']) validChain = false;
 
@@ -157,6 +169,36 @@ Blockchain.prototype.chainIsValid = function (blockchain) {
     if (!correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions) validChain = false;
 
     return validChain;
+};
+
+// Difficulty ayarlama fonksiyonu
+Blockchain.prototype.adjustDifficulty = function () {
+    // Her difficultyAdjustmentInterval blokta bir difficulty ayarla
+    if (this.chain.length % this.difficultyAdjustmentInterval !== 0) {
+        return;
+    }
+
+    // Son difficultyAdjustmentInterval bloğun ortalama süresini hesapla
+    const recentBlocks = this.chain.slice(-this.difficultyAdjustmentInterval);
+    if (recentBlocks.length < 2) return;
+
+    const timeDiff = recentBlocks[recentBlocks.length - 1].timestamp - recentBlocks[0].timestamp;
+    const averageTime = timeDiff / (recentBlocks.length - 1);
+
+    // Hedef süre ile karşılaştır
+    const expectedTime = this.targetBlockTime;
+
+    if (averageTime < expectedTime / 2) {
+        // Çok hızlı - difficulty artır
+        this.difficulty++;
+        console.log(`Difficulty increased to ${this.difficulty}`);
+    } else if (averageTime > expectedTime * 2) {
+        // Çok yavaş - difficulty azalt (minimum 1)
+        if (this.difficulty > 1) {
+            this.difficulty--;
+            console.log(`Difficulty decreased to ${this.difficulty}`);
+        }
+    }
 };
 
 Blockchain.prototype.getBlock = function (blockHash) {
