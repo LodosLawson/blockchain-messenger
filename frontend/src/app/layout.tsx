@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 import Navbar from '../components/Navbar'
+import Sidebar from '../components/Sidebar'
 import { WalletProvider } from '../context/WalletContext'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -18,19 +19,26 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#667eea" />
+        <meta name="theme-color" content="#101622" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
       </head>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans bg-background text-foreground`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans bg-background-light dark:bg-background-dark text-foreground overflow-hidden`}>
         <WalletProvider>
-          <Navbar />
-          <main className="pt-16">
-            {children}
-          </main>
+          <div className="flex h-screen">
+            <Sidebar />
+            <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+              <div className="md:hidden">
+                <Navbar />
+              </div>
+              <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+                {children}
+              </main>
+            </div>
+          </div>
         </WalletProvider>
         <script dangerouslySetInnerHTML={{
           __html: `

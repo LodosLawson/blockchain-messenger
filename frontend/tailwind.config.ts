@@ -52,6 +52,8 @@ const config: Config = {
                 "background-light": "#f6f6f8",
                 "background-dark": "#101622",
                 "surface-dark": "#161d2b",
+                "stitch-surface-darker": "#111722",
+                "sidebar-bg": "#111722",
                 "surface-light": "#ffffff",
                 "muted-dark": "#92a4c9",
                 "muted-light": "#64748b",
