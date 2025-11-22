@@ -9,6 +9,10 @@ const config: Config = {
     darkMode: 'media', // or 'class'
     theme: {
         extend: {
+            fontFamily: {
+                sans: ["var(--font-inter)", "sans-serif"],
+                display: ["var(--font-space-grotesk)", "sans-serif"],
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
@@ -43,6 +47,16 @@ const config: Config = {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                // Stitch Design System Colors
+                "stitch-primary": "#2b6cee",
+                "background-light": "#f6f6f8",
+                "background-dark": "#101622",
+                "surface-dark": "#161d2b",
+                "surface-light": "#ffffff",
+                "muted-dark": "#92a4c9",
+                "muted-light": "#64748b",
+                "border-dark": "#232f48",
+                "border-light": "#e2e8f0",
             },
             borderRadius: {
                 lg: "var(--radius)",
