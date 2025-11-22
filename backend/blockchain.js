@@ -31,7 +31,34 @@ function Blockchain() {
 
     // Deploy System Contracts
     this.deployContract('USER_REGISTRY', '00', {});
+
+    // Initialize Account Balances
+    this.accountBalances = {};
+    this.initializeBalances();
 }
+
+Blockchain.prototype.initializeBalances = function () {
+    this.accountBalances = {};
+    this.chain.forEach(block => {
+        this.updateBalancesForBlock(block);
+    });
+    console.log('Account balances initialized:', this.accountBalances);
+};
+
+Blockchain.prototype.updateBalancesForBlock = function (block) {
+    block.transactions.forEach(transaction => {
+        const { sender, recipient, amount } = transaction;
+        const amountInt = parseInt(amount);
+
+        if (sender !== "00") {
+            if (!this.accountBalances[sender]) this.accountBalances[sender] = 0;
+            this.accountBalances[sender] -= amountInt;
+        }
+
+        if (!this.accountBalances[recipient]) this.accountBalances[recipient] = 0;
+        this.accountBalances[recipient] += amountInt;
+    });
+};
 
 Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) {
     const newBlock = {
@@ -53,6 +80,9 @@ Blockchain.prototype.createNewBlock = function (nonce, previousBlockHash, hash) 
 
     this.pendingTransactions = [];
     this.chain.push(newBlock);
+
+    // Update balances with the new block
+    this.updateBalancesForBlock(newBlock);
 
     // Update blockchain timestamp
     this.updatedAt = new Date().toISOString();
@@ -84,9 +114,10 @@ Blockchain.prototype.createNewTransaction = function (amount, sender, recipient,
 };
 
 Blockchain.prototype.addTransactionToPendingTransactions = function (transactionObj) {
-    // İşlem geçerli mi kontrol et (İmza doğrulama)
-    if (!this.verifyTransaction(transactionObj)) {
-        throw new Error('Invalid transaction signature!');
+    // İşlem geçerli mi kontrol et (İmza doğrulama ve Bakiye kontrolü)
+    const verification = this.verifyTransaction(transactionObj);
+    if (!verification.valid) {
+        throw new Error(`Invalid transaction: ${verification.reason}`);
     }
 
     this.pendingTransactions.push(transactionObj);
@@ -96,13 +127,14 @@ Blockchain.prototype.addTransactionToPendingTransactions = function (transaction
 // İşlem İmza Doğrulama (EVM Compatible)
 Blockchain.prototype.verifyTransaction = function (transaction) {
     // Mining ödülleri (sender = "00") imza gerektirmez
-    if (transaction.sender === "00") return true;
+    if (transaction.sender === "00") return { valid: true };
 
     if (!transaction.signature || transaction.signature.length === 0) {
-        return false;
+        return { valid: false, reason: 'No signature' };
     }
 
     try {
+        // 1. İmza Doğrulama
         // Mesajı oluştur (imzalanan veri)
         // Not: Frontend tarafında da aynı formatta imzalanmalı!
         const message = transaction.amount.toString() + transaction.recipient;
@@ -111,10 +143,30 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
         const recoveredAddress = ethers.utils.verifyMessage(message, transaction.signature);
 
         // Gönderen adresi ile eşleşiyor mu?
-        return recoveredAddress.toLowerCase() === transaction.sender.toLowerCase();
+        if (recoveredAddress.toLowerCase() !== transaction.sender.toLowerCase()) {
+            return { valid: false, reason: 'Invalid signature' };
+        }
+
+        // 2. Bakiye Kontrolü (Security Fix)
+        const senderBalance = this.accountBalances[transaction.sender] || 0;
+        // Bekleyen işlemleri de hesaba katmak gerekebilir ama şimdilik confirmed balance yeterli
+        // Daha güvenli olması için pendingTransactions içindeki harcamaları da düşmeliyiz
+        let pendingDebit = 0;
+        this.pendingTransactions.forEach(tx => {
+            if (tx.sender === transaction.sender) {
+                pendingDebit += parseInt(tx.amount);
+            }
+        });
+
+        if (senderBalance < (parseInt(transaction.amount) + pendingDebit)) {
+            return { valid: false, reason: 'Insufficient balance' };
+        }
+
+        return { valid: true };
+
     } catch (error) {
         console.error('Signature verification failed:', error);
-        return false;
+        return { valid: false, reason: 'Verification error' };
     }
 };
 
@@ -140,22 +192,37 @@ Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData
 Blockchain.prototype.chainIsValid = function (blockchain) {
     let validChain = true;
 
+    // Chain validasyonu sırasında bakiyeleri yeniden hesaplayarak tutarlılığı kontrol edebiliriz
+    // Ancak bu işlem pahalı olabilir. Şimdilik temel blok validasyonuna odaklanalım.
+
     for (var i = 1; i < blockchain.length; i++) {
         const currentBlock = blockchain[i];
         const prevBlock = blockchain[i - 1];
 
         const blockHash = this.hashBlock(prevBlock['hash'], { transactions: currentBlock['transactions'], index: currentBlock['index'] }, currentBlock['nonce']);
         // Dinamik difficulty kontrolü
-        const target = '0'.repeat(this.difficulty);
-        if (blockHash.substring(0, this.difficulty) !== target) validChain = false;
+        // Not: Eski bloklar o anki difficulty ile oluşturuldu, ancak burada güncel difficulty kontrol ediliyor olabilir.
+        // Doğrusu her bloğun kendi difficulty değerini kaydetmesi ve ona göre kontrol edilmesidir.
+        // Bizim yapımızda block.difficulty var.
+        const target = '0'.repeat(currentBlock.difficulty || this.difficulty);
+        if (blockHash.substring(0, (currentBlock.difficulty || this.difficulty)) !== target) validChain = false;
 
         if (currentBlock['previousBlockHash'] !== prevBlock['hash']) validChain = false;
 
         // Blok içindeki işlemleri doğrula
+        // Not: Geçmiş işlemleri doğrularken o anki bakiyeyi bilmek zordur.
+        // Bu yüzden sadece imza kontrolü yapıyoruz.
+        // Full node senkronizasyonunda genesis'ten itibaren bakiye hesaplayarak gitmek gerekir.
         for (const tx of currentBlock.transactions) {
-            if (!this.verifyTransaction(tx)) {
-                console.log('Invalid transaction found in chain:', tx);
-                validChain = false;
+            // İmza kontrolü (Bakiye kontrolü geçmiş için zor, atlıyoruz)
+            if (tx.sender !== "00") {
+                try {
+                    const message = tx.amount.toString() + tx.recipient;
+                    const recoveredAddress = ethers.utils.verifyMessage(message, tx.signature);
+                    if (recoveredAddress.toLowerCase() !== tx.sender.toLowerCase()) validChain = false;
+                } catch (e) {
+                    validChain = false;
+                }
             }
         }
     }
@@ -239,11 +306,8 @@ Blockchain.prototype.getAddressData = function (address) {
         });
     });
 
-    let balance = 0;
-    addressTransactions.forEach(transaction => {
-        if (transaction.recipient === address) balance += parseInt(transaction.amount);
-        if (transaction.sender === address) balance -= parseInt(transaction.amount);
-    });
+    // Bakiyeyi cache'den al (Optimization)
+    let balance = this.accountBalances[address] || 0;
 
     return {
         addressTransactions: addressTransactions,
@@ -262,7 +326,8 @@ Blockchain.prototype.getBlockchainInfo = function () {
         miningReward: this.miningReward,
         createdAt: this.createdAt,
         updatedAt: this.updatedAt,
-        lastBlock: this.getLastBlock()
+        lastBlock: this.getLastBlock(),
+        difficulty: this.difficulty
     };
 };
 
