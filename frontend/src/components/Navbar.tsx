@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useWallet } from '../context/WalletContext';
+import { motion } from 'framer-motion';
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -10,11 +11,11 @@ export default function Navbar() {
     const isActive = (path: string) => pathname === path;
 
     const navItems = [
-        { name: 'Home', path: '/' },
-        { name: 'Wallet', path: '/wallet' },
-        { name: 'Chat', path: '/chat' },
-        { name: 'Contracts', path: '/contracts' },
-        { name: 'Explorer', path: '/explorer' },
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Cüzdan', path: '/wallet' },
+        { name: 'Sohbet', path: '/chat' },
+        { name: 'Kontratlar', path: '/contracts' },
+        { name: 'Keşfet', path: '/explorer' },
     ];
 
     const formatAddress = (addr: string) => {
@@ -22,26 +23,30 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md supports-[backdrop-filter]:bg-white/60">
+        <nav className="fixed top-0 z-50 w-full border-b border-white/10 glass-strong backdrop-blur-xl">
             <div className="container flex h-16 items-center justify-between px-4 sm:px-8 max-w-7xl mx-auto">
                 <div className="flex items-center gap-8">
-                    <Link href="/" className="flex items-center space-x-2 group">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md group-hover:shadow-lg transition-all">
+                    <Link href="/" className="flex items-center space-x-3 group">
+                        <motion.div
+                            whileHover={{ rotate: 360 }}
+                            transition={{ duration: 0.5 }}
+                            className="w-10 h-10 bg-gradient-to-br from-stitch-blue to-stitch-purple rounded-xl flex items-center justify-center text-white font-bold shadow-glow-blue"
+                        >
                             B
-                        </div>
-                        <span className="hidden font-bold sm:inline-block text-xl bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+                        </motion.div>
+                        <span className="hidden font-bold sm:inline-block text-xl text-gradient">
                             Blockchain Messenger
                         </span>
                     </Link>
 
-                    <div className="hidden md:flex items-center space-x-1">
+                    <div className="hidden md:flex items-center space-x-2">
                         {navItems.map((item) => (
                             <Link
                                 key={item.path}
                                 href={item.path}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(item.path)
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${isActive(item.path)
+                                        ? 'glass-premium text-stitch-blue shadow-glow-blue'
+                                        : 'text-muted-dark hover:glass hover:text-white'
                                     }`}
                             >
                                 {item.name}
@@ -52,31 +57,35 @@ export default function Navbar() {
 
                 <div className="flex items-center gap-4">
                     {isConnected && address ? (
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={disconnectWallet}
-                            className="px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                            className="px-5 py-2 rounded-xl text-sm font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30 hover:bg-accent-green/30 transition-all shadow-lg"
                         >
                             {formatAddress(address)}
-                        </button>
+                        </motion.button>
                     ) : (
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={connectWallet}
-                            className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg"
+                            className="px-5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-stitch-blue to-stitch-purple text-white transition-all shadow-glow-blue hover:shadow-glow-purple"
                         >
-                            Connect Wallet
-                        </button>
+                            Cüzdan Bağla
+                        </motion.button>
                     )}
 
                     {/* Mobile Menu (Simple) */}
                     <div className="flex md:hidden">
-                        <div className="flex items-center gap-4 overflow-x-auto pb-1 no-scrollbar">
+                        <div className="flex items-center gap-4 overflow-x-auto pb-1 custom-scrollbar">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.path}
                                     href={item.path}
-                                    className={`text-sm whitespace-nowrap ${isActive(item.path)
-                                        ? 'font-bold text-indigo-600 dark:text-indigo-400'
-                                        : 'text-gray-500 dark:text-gray-400'
+                                    className={`text-sm whitespace-nowrap font-semibold ${isActive(item.path)
+                                            ? 'text-stitch-blue'
+                                            : 'text-muted-dark hover:text-white'
                                         }`}
                                 >
                                     {item.name}
