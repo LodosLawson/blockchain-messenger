@@ -85,7 +85,7 @@ export default function ContractDeployer() {
     const selectedTemplate = templates.find(t => t.type === selectedType);
 
     return (
-        <div className="clean-card p-6 animate-slide-in">
+        <div className="glass-premium p-8 animate-slide-in">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
                 <span>🚀</span> Deploy New Contract
             </h2>
@@ -104,8 +104,8 @@ export default function ContractDeployer() {
                                     setParams({});
                                 }}
                                 className={`p-4 rounded-xl border-2 text-sm font-bold transition-all ${selectedType === t.type
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 shadow-md'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 bg-white/50 dark:bg-gray-800/50'
                                     }`}
                             >
                                 {t.name}
@@ -126,7 +126,7 @@ export default function ContractDeployer() {
                         type="text"
                         value={creator}
                         onChange={(e) => setCreator(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
+                        className="input-premium font-mono text-sm"
                         placeholder="Enter your wallet address"
                         required
                     />
@@ -134,8 +134,8 @@ export default function ContractDeployer() {
 
                 {/* Dynamic Parameters */}
                 {selectedTemplate && (
-                    <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 border-b pb-2">Contract Parameters</h3>
+                    <div className="space-y-4 bg-white/50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-2">Contract Parameters</h3>
 
                         {selectedType === 'TOKEN' && (
                             <>
@@ -143,7 +143,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Token Name</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="e.g. My Custom Token"
                                         onChange={e => handleParamChange('name', e.target.value)}
                                         required
@@ -153,7 +153,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Symbol</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="e.g. MCT"
                                         onChange={e => handleParamChange('symbol', e.target.value)}
                                         required
@@ -163,7 +163,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Total Supply</label>
                                     <input
                                         type="number"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="e.g. 1000000"
                                         onChange={e => handleParamChange('totalSupply', e.target.value)}
                                         required
@@ -178,7 +178,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Buyer Address</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 font-mono text-sm"
+                                        className="input-premium font-mono text-sm"
                                         placeholder="0x..."
                                         onChange={e => handleParamChange('buyer', e.target.value)}
                                         required
@@ -188,7 +188,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Seller Address</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 font-mono text-sm"
+                                        className="input-premium font-mono text-sm"
                                         placeholder="0x..."
                                         onChange={e => handleParamChange('seller', e.target.value)}
                                         required
@@ -198,7 +198,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Amount</label>
                                     <input
                                         type="number"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="0.00"
                                         onChange={e => handleParamChange('amount', e.target.value)}
                                         required
@@ -213,7 +213,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Poll Title</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="What should we vote on?"
                                         onChange={e => handleParamChange('title', e.target.value)}
                                         required
@@ -223,7 +223,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Options (comma separated)</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="Yes, No, Maybe"
                                         onChange={e => handleParamChange('options', e.target.value)}
                                         required
@@ -233,7 +233,7 @@ export default function ContractDeployer() {
                                     <label className="text-xs font-bold uppercase text-gray-500">Duration (hours)</label>
                                     <input
                                         type="number"
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600"
+                                        className="input-premium"
                                         placeholder="24"
                                         onChange={e => handleParamChange('endTime', e.target.value)}
                                         required
@@ -247,15 +247,25 @@ export default function ContractDeployer() {
                 <button
                     type="submit"
                     disabled={loading || !creator}
-                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-lg transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full btn-premium py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
-                    {loading ? 'Deploying...' : 'Deploy Contract'}
+                    {loading ? (
+                        <>
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Deploying...
+                        </>
+                    ) : (
+                        'Deploy Contract'
+                    )}
                 </button>
 
                 {status && (
-                    <div className={`p-4 rounded-lg text-sm ${status.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-                            status.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-                                'bg-blue-100 text-blue-800 border border-blue-200'
+                    <div className={`p-4 rounded-xl text-sm font-medium animate-fade-in ${status.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                        status.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                            'bg-blue-100 text-blue-800 border border-blue-200'
                         }`}>
                         {status.message}
                     </div>

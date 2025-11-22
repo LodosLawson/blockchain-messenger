@@ -58,13 +58,13 @@ export default function ContractsPage() {
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="glass-card p-2">
-                    <div className="flex gap-2">
+                <div className="glass-premium p-2 rounded-xl inline-flex w-full sm:w-auto">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         <button
                             onClick={() => setActiveTab('deploy')}
-                            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${activeTab === 'deploy'
-                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            className={`flex-1 sm:flex-none py-3 px-8 rounded-lg font-semibold transition-all duration-300 ${activeTab === 'deploy'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
                                 }`}
                         >
                             <span className="flex items-center justify-center gap-2">
@@ -76,9 +76,9 @@ export default function ContractsPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('view')}
-                            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${activeTab === 'view'
-                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            className={`flex-1 sm:flex-none py-3 px-8 rounded-lg font-semibold transition-all duration-300 ${activeTab === 'view'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
                                 }`}
                         >
                             <span className="flex items-center justify-center gap-2">
