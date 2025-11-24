@@ -1,0 +1,32 @@
+{
+  "name": "blockchain-messenger-backend",
+  "version": "1.0.0",
+  "description": "Blockchain based messaging app backend",
+  "main": "networkNode.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node networkNode.js"
+  },
+  "keywords": [
+    "blockchain",
+    "messenger"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "elliptic": "^6.5.4",
+    "ethers": "^5.7.2",
+    "express": "^4.18.2",
+    "request-promise": "^4.2.6",
+    "rp": "^0.2.0",
+    "sha256": "^0.2.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.3",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.19.0"
+  }
+}

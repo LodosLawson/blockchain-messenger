@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        @apply border-border-dark;
+    }
+
+    html {
+        @apply scroll-smooth;
+    }
+
+    body {
+        @apply bg-background-darker text-text-primary antialiased;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-display;
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
+
+/* Glassmorphism Effects */
+.glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+}
+
+.glass-strong {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20;
+}
+
+.glass-premium {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-premium:hover {
+    @apply bg-white/10 border-white/20 shadow-xl;
+    transform: translateY(-2px);
+}
+
+/* Modern Card Styles */
+.card-modern {
+    @apply rounded-2xl bg-surface-dark border border-border-light p-6 transition-all duration-300;
+}
+
+.card-modern:hover {
+    @apply border-stitch-blue/50 shadow-glow-blue;
+    transform: translateY(-4px);
+}
+
+.card-gradient {
+    @apply rounded-2xl p-6 relative overflow-hidden;
+    background: linear-gradient(135deg, rgba(43, 108, 238, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(43, 108, 238, 0.2);
+}
+
+.card-gradient::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, rgba(43, 108, 238, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+}
+
+.card-gradient:hover::before {
+    @apply opacity-100;
+}
+
+/* Premium Button Styles */
+.btn-primary {
+    @apply px-6 py-3 rounded-xl font-semibold text-white;
+    @apply bg-gradient-to-r from-stitch-blue to-stitch-purple;
+    @apply hover:shadow-glow-blue transition-all duration-300;
+    @apply active:scale-95;
+}
+
+.btn-secondary {
+    @apply px-6 py-3 rounded-xl font-semibold;
+    @apply bg-white/5 hover:bg-white/10 border border-white/10;
+    @apply text-white transition-all duration-300;
+}
+
+.btn-ghost {
+    @apply px-6 py-3 rounded-xl font-semibold;
+    @apply text-muted-dark hover:text-white hover:bg-white/5;
+    @apply transition-all duration-300;
+}
+
+/* Input Styles */
+.input-modern {
+    @apply w-full px-4 py-3 rounded-xl;
+    @apply bg-white/5 border border-white/10;
+    @apply text-white placeholder:text-muted-dark;
+    @apply focus:outline-none focus:border-stitch-blue/50 focus:ring-2 focus:ring-stitch-blue/20;
+    @apply transition-all duration-300;
+}
+
+.input-modern:focus {
+    @apply bg-white/10;
+}
+
+/* Gradient Text */
+.text-gradient {
+    @apply bg-gradient-to-r from-stitch-blue to-stitch-purple bg-clip-text text-transparent;
+}
+
+.text-gradient-pink {
+    @apply bg-gradient-to-r from-stitch-pink to-stitch-purple bg-clip-text text-transparent;
+}
+
+.text-gradient-cyan {
+    @apply bg-gradient-to-r from-stitch-cyan to-stitch-blue bg-clip-text text-transparent;
+}
+
+/* Badge Styles */
+.badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.badge-primary {
+    @apply bg-stitch-blue/20 text-stitch-blue border border-stitch-blue/30;
+}
+
+.badge-success {
+    @apply bg-accent-green/20 text-accent-green border border-accent-green/30;
+}
+
+.badge-warning {
+    @apply bg-accent-yellow/20 text-accent-yellow border border-accent-yellow/30;
+}
+
+.badge-error {
+    @apply bg-accent-red/20 text-accent-red border border-accent-red/30;
+}
+
+/* Divider */
+.divider {
+    @apply h-px bg-gradient-to-r from-transparent via-white/10 to-transparent;
+}
+
+/* Focus Ring */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-stitch-blue/50 focus:ring-offset-2 focus:ring-offset-background-dark;
+}
+
+/* Hover Effects */
+.hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+}
+
+.hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+}
+
+.hover-glow {
+    @apply transition-shadow duration-300 hover:shadow-glow-blue;
+}
+
+/* Loading Skeleton */
+.skeleton {
+    @apply bg-white/5 animate-shimmer;
+    background-image: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 100%);
+    background-size: 200% 100%;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost {
+        @apply min-h-[44px] min-w-[44px];
+    }
+
+    .input-modern {
+        @apply text-base;
+    }
+}

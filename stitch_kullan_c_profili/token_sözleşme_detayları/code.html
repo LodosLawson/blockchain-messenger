@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Token Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            font-size: 20px;
+        }
+    </style>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-4 sm:px-8 md:px-16 lg:px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 dark:border-white/10 px-4 sm:px-6 py-4">
+<div class="flex items-center gap-4 text-white">
+<div class="text-primary size-6">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-zinc-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Token Details</h2>
+</div>
+<div class="flex gap-2">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-zinc-200/50 dark:bg-[#232f48] text-zinc-800 dark:text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-zinc-200/50 dark:bg-[#232f48] text-zinc-800 dark:text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0">
+<span class="material-symbols-outlined">bookmark_add</span>
+</button>
+</div>
+</header>
+<main class="flex-1 p-4 sm:p-6 lg:p-10 space-y-8">
+<section class="flex p-4 @container">
+<div class="flex w-full flex-col gap-4 @[520px]:flex-row @[520px]:justify-between @[520px]:items-center">
+<div class="flex items-center gap-6">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-24 w-24 sm:h-32 sm:w-32" data-alt="Chainlink token logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBNNfr60Q90Ev8Lds7yv8BX9jpQQfmbU-w15UUKe_gvMDA60sgkoaQ-sgMPUAvy4rnMEadkMvx8GUsjEZ2J87r767qSDc7-aej5zEWfXHRttNTG83sTLVUrFkgAPw8FZ2PKkjHNN6-JWIoze8NAVix-ce4Z6viN1RY161zS_8qpkrnGTilOoFCeQEaudyWMCZimiryA-1gBEwcU0P4byDusTJ1_jhl-thRJy-oShnlal0MrCpOXAXXze2e1_n_LLIYoO93dW0zrjSc");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-zinc-900 dark:text-white text-2xl sm:text-[28px] font-bold leading-tight tracking-[-0.015em]">ChainLink (LINK)</p>
+<p class="text-zinc-500 dark:text-[#92a4c9] text-base font-normal leading-normal">Token</p>
+</div>
+</div>
+</div>
+</section>
+<section class="space-y-4">
+<h3 class="text-zinc-900 dark:text-white text-xl font-bold px-4">Overview</h3>
+<div class="bg-white/50 dark:bg-[#1A202C] rounded-xl p-2 sm:p-4 @container">
+<div class="flex flex-col items-stretch justify-start rounded-lg @xl:flex-row @xl:items-start @xl:p-4">
+<div class="flex w-full min-w-72 grow flex-col items-stretch justify-center gap-2 py-4 @xl:px-4">
+<p class="text-zinc-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Contract Address</p>
+<div class="flex items-center gap-3 justify-between flex-wrap">
+<p class="text-zinc-500 dark:text-[#92a4c9] text-base font-normal leading-normal break-all">0x514910771AF9Ca656af840dff83E8264EcF986CA</p>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal gap-2">
+<span class="material-symbols-outlined !text-base">content_copy</span>
+<span class="truncate">Copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex justify-stretch">
+<div class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-start">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-zinc-200/50 dark:bg-[#232f48] text-zinc-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2">
+<span class="truncate">View on Etherscan</span>
+<span class="material-symbols-outlined !text-base">open_in_new</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-zinc-200/50 dark:bg-[#232f48] text-zinc-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2">
+<span class="truncate">View on BscScan</span>
+<span class="material-symbols-outlined !text-base">open_in_new</span>
+</button>
+</div>
+</div>
+</section>
+<section class="bg-white/50 dark:bg-[#1A202C] rounded-xl p-4 sm:p-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+<div class="flex flex-col gap-1 border-t border-solid border-zinc-200 dark:border-t-[#324467] py-4 pr-2">
+<p class="text-zinc-500 dark:text-[#92a4c9] text-sm font-normal leading-normal">Total Supply</p>
+<p class="text-zinc-900 dark:text-white text-sm font-normal leading-normal">1,000,000,000</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-solid border-zinc-200 dark:border-t-[#324467] py-4 sm:pl-2">
+<p class="text-zinc-500 dark:text-[#92a4c9] text-sm font-normal leading-normal">Token Standard</p>
+<p class="text-zinc-900 dark:text-white text-sm font-normal leading-normal">ERC-20</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-solid border-zinc-200 dark:border-t-[#324467] py-4 pr-2">
+<p class="text-zinc-500 dark:text-[#92a4c9] text-sm font-normal leading-normal">Holders</p>
+<p class="text-zinc-900 dark:text-white text-sm font-normal leading-normal">695,420</p>
+</div>
+<div class="flex flex-col gap-1 border-t border-solid border-zinc-200 dark:border-t-[#324467] py-4 sm:pl-2">
+<p class="text-zinc-500 dark:text-[#92a4c9] text-sm font-normal leading-normal">Decimals</p>
+<p class="text-zinc-900 dark:text-white text-sm font-normal leading-normal">18</p>
+</div>
+</div>
+</section>
+<section>
+<div class="flex border-b border-zinc-200 dark:border-white/10 mb-4">
+<button class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary">Functions</button>
+<button class="px-4 py-2 text-sm font-medium text-zinc-500 dark:text-gray-400 border-b-2 border-transparent hover:text-zinc-900 dark:hover:text-white hover:border-gray-300">Source Code</button>
+<button class="px-4 py-2 text-sm font-medium text-zinc-500 dark:text-gray-400 border-b-2 border-transparent hover:text-zinc-900 dark:hover:text-white hover:border-gray-300">Holders</button>
+</div>
+<div class="space-y-2">
+<div class="bg-white/50 dark:bg-[#1A202C] rounded-lg p-4">
+<p class="text-zinc-900 dark:text-white font-medium">1. name</p>
+<p class="text-zinc-500 dark:text-gray-400 text-sm mt-1">string: ChainLink Token</p>
+</div>
+<div class="bg-white/50 dark:bg-[#1A202C] rounded-lg p-4">
+<p class="text-zinc-900 dark:text-white font-medium">2. approve</p>
+<p class="text-zinc-500 dark:text-gray-400 text-sm mt-1">function</p>
+</div>
+<div class="bg-white/50 dark:bg-[#1A202C] rounded-lg p-4">
+<p class="text-zinc-900 dark:text-white font-medium">3. totalSupply</p>
+<p class="text-zinc-500 dark:text-gray-400 text-sm mt-1">uint256: 1000000000000000000000000000</p>
+</div>
+<div class="bg-white/50 dark:bg-[#1A202C] rounded-lg p-4">
+<p class="text-zinc-900 dark:text-white font-medium">4. transferFrom</p>
+<p class="text-zinc-500 dark:text-gray-400 text-sm mt-1">function</p>
+</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+</div>
+</div>
+</body></html>

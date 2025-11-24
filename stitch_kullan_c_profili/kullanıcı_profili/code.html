@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#2b6cee",
+            "background-light": "#f6f6f8",
+            "background-dark": "#101622",
+          },
+          fontFamily: {
+            "display": ["Space Grotesk", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+
+    .material-symbols-outlined.fill {
+      font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full flex-col">
+<div class="flex h-full w-full flex-1">
+<!-- SideNavBar -->
+<aside class="flex w-64 flex-col border-r border-slate-200 bg-background-light p-4 dark:border-slate-800 dark:bg-background-dark">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar with a gradient background" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA3aQvQMC-66POW3rlynn9WfQ25Bp3HTwK9CcDRSlnn3hBXEAdWz31xUOd4oRNU_3oDS5l-h9uIbCyfevJceajieNmxP2egQh9PQJImN2XOBLqxtzQdT5eN1r4HBpawNPecJ2dNJD_951HF7jy78SKXyiztRrA7XlLLwLVrTcray3zwYLtp6eL5JMGNBlVSoRbLL-y6pjg-LtaLblnGHK5QfG8tfU9IZCT_Gbnpk0zxGc7q_WVHZVrYRXeHd6WVhydqAJ9G8PXwhQE");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-medium leading-normal">Kullanıcı Adı</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal">Çevrimiçi</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">chat_bubble</span>
+<p class="text-sm font-medium leading-normal">Sohbetler</p>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">group</span>
+<p class="text-sm font-medium leading-normal">Kişiler</p>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<p class="text-sm font-medium leading-normal">Bildirimler</p>
+</a>
+<a class="flex items-center gap-3 rounded-lg bg-primary/20 px-3 py-2 text-primary dark:bg-primary/20" href="#">
+<span class="material-symbols-outlined fill text-primary">settings</span>
+<p class="text-sm font-medium leading-normal">Profil ve Ayarlar</p>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">help</span>
+<p class="text-sm font-medium leading-normal">Yardım</p>
+</a>
+</nav>
+</div>
+<div class="mt-auto flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="#">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">logout</span>
+<p class="text-sm font-medium leading-normal">Çıkış Yap</p>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto p-6 lg:p-10">
+<div class="mx-auto max-w-4xl">
+<!-- PageHeading -->
+<div class="mb-8 flex flex-wrap justify-between gap-3">
+<div class="flex min-w-72 flex-col gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Profil ve Ayarlar</p>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">Profil bilgilerinizi ve gizlilik tercihlerinizi yönetin.</p>
+</div>
+</div>
+<!-- Tabs -->
+<div class="mb-8">
+<div class="flex border-b border-slate-200 dark:border-slate-700 gap-8">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-primary pb-3 pt-4" href="#">
+<p class="text-primary text-sm font-bold leading-normal tracking-[0.015em]">Profil Bilgileri</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent pb-3 pt-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" href="#">
+<p class="text-sm font-bold leading-normal tracking-[0.015em]">Gizlilik ve Güvenlik</p>
+</a>
+</div>
+</div>
+<!-- Profile Content Section -->
+<div class="flex flex-col gap-8">
+<!-- ProfileHeader -->
+<div class="flex w-full flex-col gap-4 @container md:flex-row md:items-center md:justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full min-h-32 w-32" data-alt="User avatar with a gradient background" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD-Gsmi1J9z2Yp-m0_iIhGDy8UGFxCgQwrpk_sEz-I82ZyLtPziICBGdxFkHXc_F5cOYiZ01grEaDNSaHoUm9PMu6e2Vk9UMoL7U5qmcxCfdgEWRIjvn0yA5sa13plQsNoELLuCyq6JTa7y3foi4MWGtJC8CVBfOtHnt_WAvgvduqf9hYzCkbCWsHxftg-Z9BT668ftXBl4BdTmioU2pSqQUTly7-X7fUe5xF7imDfXB6G15egXKpmmwGqwxO5a3G_3cO0GS60GfWQ");'></div>
+<button class="absolute bottom-1 right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-800 ring-2 ring-white hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-background-dark dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-base">edit</span>
+</button>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-slate-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Ad Soyad</p>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">Durum mesajı burada yer alacak.</p>
+</div>
+</div>
+</div>
+<!-- Form Section -->
+<div class="flex flex-col gap-6">
+<!-- TextFields -->
+<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+<label class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Ad</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-background-light p-3.5 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary" value="Jane"/>
+</label>
+<label class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Soyad</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-background-light p-3.5 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary" value="Doe"/>
+</label>
+</div>
+<!-- Status Message -->
+<label class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Durum Mesajı</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-background-light p-3.5 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary" placeholder="Bir durum mesajı yazın..."/>
+</label>
+<!-- Dropdown -->
+<label class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Durum</p>
+<select class="form-select flex w-full min-w-0 flex-1 appearance-none overflow-hidden rounded-lg border border-slate-300 bg-background-light p-3.5 text-base font-normal leading-normal text-slate-900 focus:border-primary focus:outline-0 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-primary">
+<option>Çevrimiçi</option>
+<option>Dışarıda</option>
+<option>Rahatsız Etmeyin</option>
+<option>Görünmez</option>
+</select>
+</label>
+<!-- User ID (non-editable) -->
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Kullanıcı ID</p>
+<div class="relative flex items-center">
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300 bg-slate-100 p-3.5 pr-12 text-base font-normal leading-normal text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400" readonly="" value="0x1A2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p"/>
+<button class="absolute right-2 flex cursor-pointer items-center justify-center rounded-md p-2 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-lg">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-4 flex justify-end gap-3 border-t border-slate-200 pt-6 dark:border-slate-700">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 text-slate-800 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
+<span class="truncate">İptal</span>
+</button>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90">
+<span class="truncate">Değişiklikleri Kaydet</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>
