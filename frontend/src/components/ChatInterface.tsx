@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useWallet } from '../context/WalletContext';
 import { API_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip, DollarSign, MoreVertical, Check, CheckCheck } from 'lucide-react';
+import { Send, Paperclip, DollarSign, MoreVertical, Check, CheckCheck, Zap, Clock, Hourglass } from 'lucide-react';
 
 interface ChatInterfaceProps {
     recipient: {
@@ -21,7 +21,17 @@ export default function ChatInterface({ recipient }: ChatInterfaceProps) {
     const [sending, setSending] = useState(false);
     const [showSendCrypto, setShowSendCrypto] = useState(false);
     const [cryptoAmount, setCryptoAmount] = useState('');
+    const [messagingMode, setMessagingMode] = useState<'fast' | 'normal' | 'slow'>('normal');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const getModeDetails = (mode: string) => {
+        switch (mode) {
+            case 'fast': return { fee: 10, label: 'Fast', icon: Zap, time: '~Instant' };
+            case 'normal': return { fee: 5, label: 'Normal', icon: Clock, time: '~10m' };
+            case 'slow': return { fee: 1, label: 'Slow', icon: Hourglass, time: '~1h' };
+            default: return { fee: 5, label: 'Normal', icon: Clock, time: '~10m' };
+        }
+    };
 
     useEffect(() => {
         if (address && recipient) {
@@ -72,6 +82,9 @@ export default function ChatInterface({ recipient }: ChatInterfaceProps) {
         setSending(true);
         try {
             const amount = cryptoAmount ? parseInt(cryptoAmount) : 0;
+            const modeDetails = getModeDetails(messagingMode);
+            const fee = modeDetails.fee;
+
             const messageToSign = amount.toString() + recipient.address;
             const signature = await signer.signMessage(messageToSign);
 
@@ -80,7 +93,9 @@ export default function ChatInterface({ recipient }: ChatInterfaceProps) {
                 sender: address,
                 recipient: recipient.address,
                 signature: signature,
-                message: newMessage
+                message: newMessage,
+                mode: messagingMode,
+                fee: fee
             };
 
             await axios.post(`${API_URL}/transaction/broadcast`, transactionData);
@@ -214,6 +229,30 @@ export default function ChatInterface({ recipient }: ChatInterfaceProps) {
                 </AnimatePresence>
 
                 <form onSubmit={handleSendMessage} className="flex items-end gap-3">
+                    <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+                        {(['fast', 'normal', 'slow'] as const).map((mode) => {
+                            const details = getModeDetails(mode);
+                            const Icon = details.icon;
+                            const isActive = messagingMode === mode;
+
+                            return (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => setMessagingMode(mode)}
+                                    className={`
+                                        p-2 rounded-lg flex items-center gap-1 transition-all
+                                        ${isActive ? 'bg-white/10 text-white shadow-sm' : 'text-muted-dark hover:text-white'}
+                                    `}
+                                    title={`${details.label} (${details.fee} fee)`}
+                                >
+                                    <Icon size={16} />
+                                    {isActive && <span className="text-xs font-medium hidden sm:inline">{details.time}</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     <button
                         type="button"
                         onClick={() => setShowSendCrypto(!showSendCrypto)}

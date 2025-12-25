@@ -49,12 +49,61 @@ app.post('/transaction', function (req, res) {
     res.json({ note: `Transaction will be added in block ${blockIndex}.` });
 });
 
+// Mining Scheduler
+let miningTimeout = null;
+let scheduledMiningTime = null;
+
+const triggerMining = () => {
+    rp({
+        uri: bitcoin.currentNodeUrl + '/mine',
+        method: 'GET',
+        json: true
+    }).catch(err => console.error('Mining trigger failed:', err));
+    miningTimeout = null;
+    scheduledMiningTime = null;
+};
+
+const scheduleMining = (mode) => {
+    const now = Date.now();
+    let delay = 0;
+
+    if (mode === 'fast') {
+        delay = 0; // Immediate
+    } else if (mode === 'normal') {
+        delay = 10 * 60 * 1000; // 10 minutes
+    } else if (mode === 'slow') {
+        delay = 60 * 60 * 1000; // 1 hour
+    } else {
+        return; // Unknown mode, ignore
+    }
+
+    const proposedTime = now + delay;
+
+    // If mining is already scheduled, check if we need to expedite it
+    if (scheduledMiningTime !== null) {
+        if (proposedTime < scheduledMiningTime) {
+            // New request is more urgent, reschedule
+            clearTimeout(miningTimeout);
+            miningTimeout = setTimeout(triggerMining, delay);
+            scheduledMiningTime = proposedTime;
+            console.log(`Rescheduled mining for ${mode} mode in ${delay}ms`);
+        } else {
+            console.log(`Mining already scheduled sooner than ${mode} request. Keeping existing schedule.`);
+        }
+    } else {
+        // No mining scheduled, schedule it
+        miningTimeout = setTimeout(triggerMining, delay);
+        scheduledMiningTime = proposedTime;
+        console.log(`Scheduled mining for ${mode} mode in ${delay}ms`);
+    }
+};
+
 // Yeni işlem oluştur ve ağa yay (Broadcast)
 app.post('/transaction/broadcast', function (req, res) {
-    const { amount, sender, recipient, signature, message } = req.body;
+    const { amount, sender, recipient, signature, message, mode, fee } = req.body;
 
     try {
-        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature, message);
+        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature, message, mode, fee);
         bitcoin.addTransactionToPendingTransactions(newTransaction);
 
         const requestPromises = [];
@@ -70,6 +119,9 @@ app.post('/transaction/broadcast', function (req, res) {
 
         Promise.all(requestPromises)
             .then(data => {
+                // Trigger Mining Scheduler based on 'mode'
+                scheduleMining(mode || 'normal'); // Default to normal if undefined
+
                 res.json({ note: 'Transaction created and broadcast successfully.' });
             });
     } catch (e) {

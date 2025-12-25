@@ -98,12 +98,14 @@ Blockchain.prototype.getLastBlock = function () {
 };
 
 // Yeni Transaction Yapısı (İmzalı)
-Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature, message = '') {
+Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature, message = '', mode = 'normal', fee = 0) {
     const newTransaction = {
         amount: amount,
         sender: sender,
         recipient: recipient,
         message: message, // Chat message
+        mode: mode,       // fast, normal, slow
+        fee: fee,         // Transaction fee
         transactionId: uuidv4().split('-').join(''),
         timestamp: Date.now(),
         version: this.version,
@@ -158,7 +160,7 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
             }
         });
 
-        if (senderBalance < (parseInt(transaction.amount) + pendingDebit)) {
+        if (senderBalance < (parseInt(transaction.amount) + parseInt(transaction.fee || 0) + pendingDebit)) {
             return { valid: false, reason: 'Insufficient balance' };
         }
 
