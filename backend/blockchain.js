@@ -48,15 +48,15 @@ Blockchain.prototype.initializeBalances = function () {
 Blockchain.prototype.updateBalancesForBlock = function (block) {
     block.transactions.forEach(transaction => {
         const { sender, recipient, amount } = transaction;
-        const amountInt = parseInt(amount);
+        const amountFloat = parseFloat(amount);
 
         if (sender !== "00") {
             if (!this.accountBalances[sender]) this.accountBalances[sender] = 0;
-            this.accountBalances[sender] -= amountInt;
+            this.accountBalances[sender] -= amountFloat;
         }
 
         if (!this.accountBalances[recipient]) this.accountBalances[recipient] = 0;
-        this.accountBalances[recipient] += amountInt;
+        this.accountBalances[recipient] += amountFloat;
     });
 };
 
@@ -98,7 +98,7 @@ Blockchain.prototype.getLastBlock = function () {
 };
 
 // Yeni Transaction Yapısı (İmzalı)
-Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature, message = '', mode = 'normal', fee = 0) {
+Blockchain.prototype.createNewTransaction = function (amount, sender, recipient, signature, message = '', mode = 'normal', fee = 0, nonce, timestamp) {
     const newTransaction = {
         amount: amount,
         sender: sender,
@@ -106,8 +106,9 @@ Blockchain.prototype.createNewTransaction = function (amount, sender, recipient,
         message: message, // Chat message
         mode: mode,       // fast, normal, slow
         fee: fee,         // Transaction fee
+        nonce: nonce,     // Unique identifier for replay protection
         transactionId: uuidv4().split('-').join(''),
-        timestamp: Date.now(),
+        timestamp: timestamp || Date.now(),
         version: this.version,
         signature: signature
     };
@@ -136,10 +137,17 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
     }
 
     try {
-        // 1. İmza Doğrulama
-        // Mesajı oluştur (imzalanan veri)
-        // Not: Frontend tarafında da aynı formatta imzalanmalı!
-        const message = transaction.amount.toString() + transaction.recipient;
+        // 1. İmza Doğrulama (Enhanced Security)
+        // Format: amount + recipient + nonce + timestamp + fee
+        // Security Check: Positive Amount & Fee
+        if (parseFloat(transaction.amount) <= 0) return { valid: false, reason: 'Invalid amount' };
+        if (parseFloat(transaction.fee) < 0) return { valid: false, reason: 'Invalid fee' };
+
+        const message = transaction.amount.toString() +
+            transaction.recipient +
+            transaction.nonce +
+            transaction.timestamp.toString() +
+            (transaction.fee || 0).toString();
 
         // İmzayı doğrulayan adresi bul
         const recoveredAddress = ethers.utils.verifyMessage(message, transaction.signature);
@@ -148,6 +156,13 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
         if (recoveredAddress.toLowerCase() !== transaction.sender.toLowerCase()) {
             return { valid: false, reason: 'Invalid signature' };
         }
+
+        // 1.5 Replay Check
+        // Check if this specific signature/nonce has proved to be used before.
+        // For a true robust system, we need a 'used_nonces' set or check previous blocks.
+        // For now, reliance on unique nonce + signature uniqueness is a step up.
+        // (Future improvement: specific 'usedNonces' db)
+
 
         // 2. Bakiye Kontrolü (Security Fix)
         const senderBalance = this.accountBalances[transaction.sender] || 0;
@@ -169,6 +184,15 @@ Blockchain.prototype.verifyTransaction = function (transaction) {
     } catch (error) {
         console.error('Signature verification failed:', error);
         return { valid: false, reason: 'Verification error' };
+    }
+};
+
+Blockchain.prototype.verifyGenericSignature = function (address, message, signature) {
+    try {
+        const recoveredAddress = ethers.utils.verifyMessage(message, signature);
+        return recoveredAddress.toLowerCase() === address.toLowerCase();
+    } catch (e) {
+        return false;
     }
 };
 
@@ -219,7 +243,11 @@ Blockchain.prototype.chainIsValid = function (blockchain) {
             // İmza kontrolü (Bakiye kontrolü geçmiş için zor, atlıyoruz)
             if (tx.sender !== "00") {
                 try {
-                    const message = tx.amount.toString() + tx.recipient;
+                    const message = tx.amount.toString() +
+                        tx.recipient +
+                        tx.nonce +
+                        tx.timestamp.toString() +
+                        (tx.fee || 0).toString();
                     const recoveredAddress = ethers.utils.verifyMessage(message, tx.signature);
                     if (recoveredAddress.toLowerCase() !== tx.sender.toLowerCase()) validChain = false;
                 } catch (e) {

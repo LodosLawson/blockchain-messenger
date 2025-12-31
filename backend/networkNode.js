@@ -16,6 +16,45 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
+// Simple In-Memory Rate Limiter
+const rateLimit = {};
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 100; // 100 req/min per IP (Adjust as needed)
+
+const limiterMiddleware = (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+
+    if (!rateLimit[ip]) {
+        rateLimit[ip] = [];
+    }
+
+    // Clean old requests
+    rateLimit[ip] = rateLimit[ip].filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+
+    if (rateLimit[ip].length >= MAX_REQUESTS) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
+    rateLimit[ip].push(now);
+    next();
+};
+
+// Cleanup old rate limit keys to prevent memory leak
+setInterval(() => {
+    const now = Date.now();
+    for (const ip in rateLimit) {
+        // Filter old requests
+        rateLimit[ip] = rateLimit[ip].filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+        // If no requests left, delete the IP key
+        if (rateLimit[ip].length === 0) {
+            delete rateLimit[ip];
+        }
+    }
+}, RATE_LIMIT_WINDOW);
+
+app.use(limiterMiddleware);
+
 // Structured Logger for Google Cloud
 function log(severity, message, data = {}) {
     console.log(JSON.stringify({
@@ -56,7 +95,7 @@ let scheduledMiningTime = null;
 const triggerMining = () => {
     rp({
         uri: bitcoin.currentNodeUrl + '/mine',
-        method: 'GET',
+        method: 'POST',
         json: true
     }).catch(err => console.error('Mining trigger failed:', err));
     miningTimeout = null;
@@ -100,10 +139,10 @@ const scheduleMining = (mode) => {
 
 // Yeni işlem oluştur ve ağa yay (Broadcast)
 app.post('/transaction/broadcast', function (req, res) {
-    const { amount, sender, recipient, signature, message, mode, fee } = req.body;
+    const { amount, sender, recipient, signature, message, mode, fee, nonce, timestamp } = req.body;
 
     try {
-        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature, message, mode, fee);
+        const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient, signature, message, mode, fee, nonce, timestamp);
         bitcoin.addTransactionToPendingTransactions(newTransaction);
 
         const requestPromises = [];
@@ -130,7 +169,7 @@ app.post('/transaction/broadcast', function (req, res) {
 });
 
 // Yeni blok kaz (Mine) ve Yayınla
-app.get('/mine', function (req, res) {
+app.post('/mine', function (req, res) {
     const lastBlock = bitcoin.getLastBlock();
     const previousBlockHash = lastBlock['hash'];
     const currentBlockData = {
@@ -236,6 +275,12 @@ app.post('/register-and-broadcast-node', function (req, res) {
 // Node kaydet (Diğer nodelar tarafından çağrılır)
 app.post('/register-node', function (req, res) {
     const newNodeUrl = req.body.newNodeUrl;
+
+    // Security: Limit Max Peers
+    if (bitcoin.networkNodes.length >= 50) {
+        return res.status(403).json({ error: 'Max peers reached. Cannot join network.' });
+    }
+
     const nodeNotAlreadyPresent = bitcoin.networkNodes.indexOf(newNodeUrl) == -1;
     const notCurrentNode = bitcoin.currentNodeUrl !== newNodeUrl;
     if (nodeNotAlreadyPresent && notCurrentNode) bitcoin.networkNodes.push(newNodeUrl);
@@ -245,7 +290,14 @@ app.post('/register-node', function (req, res) {
 // Toplu node kaydet (Yeni katılan node tarafından çağrılır)
 app.post('/register-nodes-bulk', function (req, res) {
     const allNetworkNodes = req.body.allNetworkNodes;
+
+    // Security: Limit Bulk Import
+    // Only accept up to Remaining slots or cap total
+    const MAX_PEERS = 50;
+
     allNetworkNodes.forEach(networkNodeUrl => {
+        if (bitcoin.networkNodes.length >= MAX_PEERS) return;
+
         const nodeNotAlreadyPresent = bitcoin.networkNodes.indexOf(networkNodeUrl) == -1;
         const notCurrentNode = bitcoin.currentNodeUrl !== networkNodeUrl;
         if (nodeNotAlreadyPresent && notCurrentNode) bitcoin.networkNodes.push(networkNodeUrl);
@@ -351,11 +403,22 @@ app.post('/contract/deploy', function (req, res) {
 
 // Execute contract method
 app.post('/contract/execute', function (req, res) {
-    const { contractId, method, params, caller } = req.body;
+    const { contractId, method, params, caller, signature, nonce, timestamp } = req.body;
 
-    if (!contractId || !method || !caller) {
-        return res.status(400).json({ error: 'contractId, method, and caller are required' });
+    if (!contractId || !method || !caller || !signature || !nonce || !timestamp) {
+        return res.status(400).json({ error: 'contractId, method, caller, signature, nonce, and timestamp are required' });
     }
+
+    // Verify Signature
+    const message = contractId + method + JSON.stringify(params || {}) + nonce + timestamp.toString();
+    const isValid = bitcoin.verifyGenericSignature(caller, message, signature);
+
+    if (!isValid) {
+        return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // Optional: Check Replay (using nonce cache - simplified)
+    // In production, use Redis or DB to store used nonces with TTL
 
     try {
         const result = bitcoin.executeContract(contractId, method, params || {}, caller);

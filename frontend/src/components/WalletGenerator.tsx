@@ -11,8 +11,8 @@ export default function WalletGenerator() {
     const [showPrivate, setShowPrivate] = useState(false);
 
     useEffect(() => {
-        const storedPublic = localStorage.getItem('blockchain_public_key');
-        const storedPrivate = localStorage.getItem('blockchain_private_key');
+        const storedPublic = sessionStorage.getItem('blockchain_public_key');
+        const storedPrivate = sessionStorage.getItem('blockchain_private_key');
         if (storedPublic && storedPrivate) {
             setPublicKey(storedPublic);
             setPrivateKey(storedPrivate);
@@ -27,8 +27,8 @@ export default function WalletGenerator() {
         setPublicKey(pub);
         setPrivateKey(priv);
 
-        localStorage.setItem('blockchain_public_key', pub);
-        localStorage.setItem('blockchain_private_key', priv);
+        sessionStorage.setItem('blockchain_public_key', pub);
+        sessionStorage.setItem('blockchain_private_key', priv);
     };
 
     return (
@@ -38,7 +38,8 @@ export default function WalletGenerator() {
             {!publicKey ? (
                 <div className="text-center">
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        You don't have a wallet yet. Create one to start sending messages and coins.
+                        You don't have a wallet in this session. Create one to start sending messages and coins.
+                        <br /><span className="text-red-500 font-bold">Warning: Keys are only stored in this session. Save them securely!</span>
                     </p>
                     <button
                         onClick={generateWallet}

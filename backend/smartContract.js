@@ -88,28 +88,34 @@ class SmartContract {
 
     executeTokenMethod(method, params, caller) {
         const result = { success: false, message: '', newState: null };
+        // Create a deep clone of the relevant state to ensure atomicity
+        // (For complex states, use structuredClone or a library, but basic JSON parse/stringify works for this simple state)
+        const tempState = JSON.parse(JSON.stringify(this.state));
 
         switch (method) {
             case 'transfer':
                 const { to, amount } = params;
-                if (!this.state.balances[caller] || this.state.balances[caller] < amount) {
+                if (amount <= 0) {
+                    result.message = 'Amount must be positive';
+                    return result;
+                }
+                if (!tempState.balances[caller] || tempState.balances[caller] < amount) {
                     result.message = 'Insufficient balance';
                     return result;
                 }
 
-                this.state.balances[caller] -= amount;
-                this.state.balances[to] = (this.state.balances[to] || 0) + amount;
+                tempState.balances[caller] -= amount;
+                tempState.balances[to] = (tempState.balances[to] || 0) + amount;
 
                 result.success = true;
-                result.message = `Transferred ${amount} ${this.state.symbol} to ${to}`;
-                result.newState = { ...this.state };
+                result.message = `Transferred ${amount} ${tempState.symbol} to ${to}`;
                 break;
 
             case 'balanceOf':
                 const { address } = params;
                 result.success = true;
-                result.message = `Balance: ${this.state.balances[address] || 0}`;
-                result.data = this.state.balances[address] || 0;
+                result.message = `Balance: ${tempState.balances[address] || 0}`;
+                result.data = tempState.balances[address] || 0;
                 break;
 
             case 'mint':
@@ -119,12 +125,11 @@ class SmartContract {
                 }
 
                 const { mintTo, mintAmount } = params;
-                this.state.balances[mintTo] = (this.state.balances[mintTo] || 0) + mintAmount;
-                this.state.totalSupply += mintAmount;
+                tempState.balances[mintTo] = (tempState.balances[mintTo] || 0) + mintAmount;
+                tempState.totalSupply += mintAmount;
 
                 result.success = true;
-                result.message = `Minted ${mintAmount} ${this.state.symbol}`;
-                result.newState = { ...this.state };
+                result.message = `Minted ${mintAmount} ${tempState.symbol}`;
                 break;
 
             default:
@@ -132,6 +137,10 @@ class SmartContract {
         }
 
         if (result.success) {
+            // Commit state changes
+            this.state = tempState;
+            result.newState = { ...this.state };
+
             this.executionHistory.push({
                 method,
                 params,

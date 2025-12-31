@@ -14,7 +14,7 @@ export default function TransactionForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const storedKey = localStorage.getItem('blockchain_private_key');
+    const storedKey = sessionStorage.getItem('blockchain_private_key');
     if (storedKey) {
       setPrivateKey(storedKey);
     }
@@ -49,7 +49,11 @@ export default function TransactionForm() {
       }
 
       // 3. Sign Transaction
-      const signature = signTransaction(privateKey, amount, recipient);
+      const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      const timestamp = Date.now();
+      const fee = 0;
+
+      const signature = signTransaction(privateKey, amount, recipient, nonce, timestamp, fee);
 
       // 4. Broadcast
       await axios.post(`${API_URL}/transaction/broadcast`, {
@@ -57,7 +61,10 @@ export default function TransactionForm() {
         message: encryptedMessage, // Send Encrypted Message
         sender,
         recipient,
-        signature
+        signature,
+        nonce,
+        timestamp,
+        fee
       });
 
       setStatus({ type: 'success', message: 'Message sent successfully!' });

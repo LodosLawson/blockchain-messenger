@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { signMessage } from '../utils/crypto';
+import { API_URL } from '../config';
 
 interface Contract {
     contractId: string;
@@ -31,7 +33,7 @@ export default function ContractViewer() {
 
     const fetchContracts = async () => {
         try {
-            const response = await axios.get('http://localhost:3005/contracts');
+            const response = await axios.get(`${API_URL}/contracts`);
             setContracts(response.data.contracts);
         } catch (error) {
             console.error('Error fetching contracts:', error);
@@ -44,18 +46,39 @@ export default function ContractViewer() {
         setLoading(true);
         setResult(null);
 
+        const privateKey = sessionStorage.getItem('blockchain_private_key');
+        if (!privateKey) {
+            setResult({ success: false, message: 'No wallet found (Private Key missing). Create a wallet first.' });
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await axios.post('http://localhost:3005/contract/execute', {
+            const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            const timestamp = Date.now();
+            // Message format MUST match backend: contractId + method + params + nonce + timestamp
+            const message = selectedContract.contractId + method + JSON.stringify(methodParams) + nonce + timestamp.toString();
+
+            const signature = signMessage(privateKey, message);
+
+            if (!signature) {
+                throw new Error('Signing failed');
+            }
+
+            const response = await axios.post(`${API_URL}/contract/execute`, {
                 contractId: selectedContract.contractId,
                 method,
                 params: methodParams,
-                caller
+                caller,
+                signature,
+                nonce,
+                timestamp
             });
 
             setResult(response.data);
             // Refresh contract state
             fetchContracts();
-            const updated = await axios.get(`http://localhost:3005/contract/${selectedContract.contractId}`);
+            const updated = await axios.get(`${API_URL}/contract/${selectedContract.contractId}`);
             setSelectedContract(updated.data.contract);
         } catch (error: any) {
             setResult({ success: false, message: error.response?.data?.error || error.message });

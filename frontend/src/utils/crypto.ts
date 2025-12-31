@@ -12,11 +12,23 @@ export const generateKeys = () => {
     return { publicKey, privateKey };
 };
 
-export const signTransaction = (privateKeyStr: string, amount: string, recipient: string) => {
+export const signTransaction = (privateKeyStr: string, amount: string, recipient: string, nonce: string, timestamp: number, fee: number) => {
     const key = ec.keyFromPrivate(privateKeyStr);
-    const msgHash = sha256(amount.toString() + recipient);
+    const msgHash = sha256(amount.toString() + recipient + nonce + timestamp.toString() + fee.toString());
     const signature = key.sign(msgHash);
     return signature.toDER('hex');
+};
+
+export const signMessage = (privateKeyStr: string, message: string) => {
+    try {
+        const key = ec.keyFromPrivate(privateKeyStr);
+        const msgHash = sha256(message);
+        const signature = key.sign(msgHash);
+        return signature.toDER('hex');
+    } catch (e) {
+        console.error("Signing error:", e);
+        return null;
+    }
 };
 
 export const getPublicFromPrivate = (privateKeyStr: string) => {
